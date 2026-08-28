@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -919,6 +919,67 @@ export type Database = {
             columns: ["unidad_id"]
             isOneToOne: false
             referencedRelation: "unidades_medida"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conciliaciones_bancarias: {
+        Row: {
+          created_at: string
+          cuenta_id: string
+          documento_id: string | null
+          estatus: Database["public"]["Enums"]["estatus_registro"]
+          id: string
+          notas: string | null
+          periodo: string
+          saldo_estado_cuenta: number
+          updated_at: string
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          cuenta_id: string
+          documento_id?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          notas?: string | null
+          periodo: string
+          saldo_estado_cuenta: number
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          cuenta_id?: string
+          documento_id?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          notas?: string | null
+          periodo?: string
+          saldo_estado_cuenta?: number
+          updated_at?: string
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conciliaciones_bancarias_cuenta_id_fkey"
+            columns: ["cuenta_id"]
+            isOneToOne: false
+            referencedRelation: "cuentas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conciliaciones_bancarias_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conciliaciones_bancarias_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]
@@ -3172,6 +3233,47 @@ export type Database = {
       }
     }
     Views: {
+      v_conciliaciones_bancarias: {
+        Row: {
+          alias: string | null
+          banco: string | null
+          created_at: string | null
+          cuenta_id: string | null
+          diferencia: number | null
+          documento_id: string | null
+          documento_nombre: string | null
+          documento_storage_path: string | null
+          id: string | null
+          notas: string | null
+          periodo: string | null
+          saldo_calculado: number | null
+          saldo_estado_cuenta: number | null
+          usuario_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conciliaciones_bancarias_cuenta_id_fkey"
+            columns: ["cuenta_id"]
+            isOneToOne: false
+            referencedRelation: "cuentas_bancarias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conciliaciones_bancarias_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conciliaciones_bancarias_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_cxp_antiguedad: {
         Row: {
           cuenta_por_pagar_id: string | null
@@ -3327,6 +3429,10 @@ export type Database = {
       fn_roles_actuales: {
         Args: never
         Returns: Database["public"]["Enums"]["rol_codigo"][]
+      }
+      fn_saldo_bancario_a_fecha: {
+        Args: { p_cuenta_id: string; p_fecha: string }
+        Returns: number
       }
       fn_snapshot_costo_recetas: {
         Args: { p_periodo: string }
