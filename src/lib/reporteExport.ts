@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 import type { ReporteMensual } from "@/lib/reportes";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+import { LOGO_BIANCO_STORICO_BASE64 } from "@/assets/logoBase64";
 
 function nombreMes(periodo: string) {
   return new Date(`${periodo}T00:00:00`).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
@@ -27,10 +28,11 @@ export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: strin
   const doc = new jsPDF();
   const mes = nombreMes(r.periodo);
 
-  doc.setFontSize(16);
-  doc.text("Bianco Storico — Reporte Gerencial Mensual", 14, 16);
+  doc.addImage(LOGO_BIANCO_STORICO_BASE64, "PNG", 14, 9, 50, 8.28);
   doc.setFontSize(11);
-  doc.text(`${sucursalNombre} · ${mes}`, 14, 23);
+  doc.setTextColor(90, 90, 90);
+  doc.text(`Reporte Gerencial Mensual · ${sucursalNombre} · ${mes}`, 14, 24);
+  doc.setTextColor(0, 0, 0);
 
   autoTable(doc, {
     startY: 30,

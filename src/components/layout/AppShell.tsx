@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { ROLES_INFO } from "@/lib/roles";
 import { Button } from "@/components/ui/Button";
+import logo from "@/assets/logo-bianco-storico.png";
 
 interface NavItem {
   to: string;
@@ -15,8 +16,8 @@ export function AppShell({ navItems, titulo }: { navItems: NavItem[]; titulo: st
     <div className="flex min-h-screen bg-ink-50">
       <aside className="flex w-60 shrink-0 flex-col border-r border-ink-200 bg-white">
         <div className="border-b border-ink-100 px-5 py-5">
-          <p className="text-sm font-semibold text-ink-900">Bianco Storico</p>
-          <p className="text-xs text-ink-500">{titulo}</p>
+          <img src={logo} alt="Bianco Storico" className="h-6 w-auto" />
+          <p className="mt-2 text-xs text-ink-500">{titulo}</p>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => (
