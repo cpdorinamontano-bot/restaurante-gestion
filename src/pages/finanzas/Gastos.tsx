@@ -37,14 +37,14 @@ export default function Gastos() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">Gastos</h1>
-        <label className="flex flex-col text-xs font-medium text-slate-600">
+        <h1 className="text-xl font-semibold text-ink-900">Gastos</h1>
+        <label className="flex flex-col text-xs font-medium text-ink-600">
           Mes
           <input
             type="month"
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
           />
         </label>
       </div>
@@ -60,12 +60,12 @@ export default function Gastos() {
         </CardHeader>
         <CardContent className="space-y-2">
           {topCategorias.length === 0 ? (
-            <p className="text-sm text-slate-500">Sin gastos en este mes.</p>
+            <p className="text-sm text-ink-500">Sin gastos en este mes.</p>
           ) : (
             topCategorias.map(([nombre, monto]) => (
               <div key={nombre} className="flex items-center justify-between text-sm">
-                <span className="text-slate-700">{nombre}</span>
-                <span className="font-medium text-slate-900">{formatCurrency(monto)}</span>
+                <span className="text-ink-700">{nombre}</span>
+                <span className="font-medium text-ink-900">{formatCurrency(monto)}</span>
               </div>
             ))
           )}
@@ -78,13 +78,13 @@ export default function Gastos() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-sm text-slate-500">Cargando…</p>
+            <p className="text-sm text-ink-500">Cargando…</p>
           ) : !gastos?.length ? (
-            <p className="text-sm text-slate-500">Sin gastos en este mes.</p>
+            <p className="text-sm text-ink-500">Sin gastos en este mes.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase text-slate-500">
+                <thead className="text-left text-xs uppercase text-ink-500">
                   <tr>
                     <th className="pb-2">Fecha</th>
                     <th className="pb-2">Concepto</th>
@@ -95,11 +95,11 @@ export default function Gastos() {
                 </thead>
                 <tbody>
                   {gastos.map((g: any) => (
-                    <tr key={g.id} className="border-t border-slate-100">
+                    <tr key={g.id} className="border-t border-ink-100">
                       <td className="py-1.5">{formatDate(g.fecha)}</td>
                       <td className="py-1.5">{g.concepto}</td>
-                      <td className="py-1.5 text-slate-500">{g.categorias_gastos?.nombre}</td>
-                      <td className="py-1.5 text-slate-500">{g.estatus_pago}</td>
+                      <td className="py-1.5 text-ink-500">{g.categorias_gastos?.nombre}</td>
+                      <td className="py-1.5 text-ink-500">{g.estatus_pago}</td>
                       <td className="py-1.5 text-right">{formatCurrency(Number(g.subtotal) + Number(g.impuestos))}</td>
                     </tr>
                   ))}

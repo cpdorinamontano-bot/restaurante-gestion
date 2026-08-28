@@ -71,14 +71,14 @@ export default function CierreDiario() {
     setCierre(data);
   }
 
-  if (loading || !cierre) return <p className="text-sm text-slate-500">Cargando…</p>;
+  if (loading || !cierre) return <p className="text-sm text-ink-500">Cargando…</p>;
 
   const completos = ITEMS.filter((i) => cierre.checklist[i.key]).length;
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Cierre del día</h1>
+        <h1 className="text-xl font-semibold text-ink-900">Cierre del día</h1>
         <Badge tone={estatusConciliacionTone(cierre.estatus)}>{cierre.estatus}</Badge>
       </div>
       <Card>
@@ -89,7 +89,7 @@ export default function CierreDiario() {
         </CardHeader>
         <CardContent className="space-y-2">
           {ITEMS.map((item) => (
-            <label key={item.key} className="flex items-center gap-2 text-sm text-slate-700">
+            <label key={item.key} className="flex items-center gap-2 text-sm text-ink-700">
               <input
                 type="checkbox"
                 checked={!!cierre.checklist[item.key]}

@@ -14,18 +14,18 @@ export function StatCard({
 }) {
   return (
     <Card className="p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-ink-500">{label}</p>
       <p
         className={cn(
           "mt-1 text-2xl font-semibold",
           tone === "positivo" && "text-emerald-700",
           tone === "negativo" && "text-rose-700",
-          tone === "neutral" && "text-slate-900"
+          tone === "neutral" && "text-ink-900"
         )}
       >
         {value}
       </p>
-      {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-ink-500">{hint}</p>}
     </Card>
   );
 }

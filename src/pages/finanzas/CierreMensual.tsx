@@ -111,7 +111,7 @@ export default function CierreMensual() {
     setMensaje(error ? error.message : "KPIs del periodo actualizados.");
   }
 
-  if (loading || !cierre) return <p className="text-sm text-slate-500">Cargando…</p>;
+  if (loading || !cierre) return <p className="text-sm text-ink-500">Cargando…</p>;
 
   const completos = ITEMS.filter((i) => cierre.checklist[i.key]).length;
   const puedeAvanzar = FLUJO.indexOf(cierre.estatus) < FLUJO.length - 1;
@@ -120,7 +120,7 @@ export default function CierreMensual() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Cierre mensual — {periodo.slice(0, 7)}</h1>
+        <h1 className="text-xl font-semibold text-ink-900">Cierre mensual — {periodo.slice(0, 7)}</h1>
         <Badge tone={estatusConciliacionTone(cierre.estatus)}>{cierre.estatus}</Badge>
       </div>
 
@@ -132,7 +132,7 @@ export default function CierreMensual() {
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-2">
           {ITEMS.map((item) => (
-            <label key={item.key} className="flex items-center gap-2 text-sm text-slate-700">
+            <label key={item.key} className="flex items-center gap-2 text-sm text-ink-700">
               <input
                 type="checkbox"
                 checked={!!cierre.checklist[item.key]}
@@ -159,7 +159,7 @@ export default function CierreMensual() {
         </CardContent>
       </Card>
 
-      {mensaje && <p className="text-sm text-slate-700">{mensaje}</p>}
+      {mensaje && <p className="text-sm text-ink-700">{mensaje}</p>}
 
       {cierre.estatus !== "CERRADO" && puedeAvanzar && (
         <Button onClick={avanzarEstatus} disabled={siguiente === "CERRADO" && completos < ITEMS.length}>

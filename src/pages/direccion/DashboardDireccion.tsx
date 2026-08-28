@@ -31,16 +31,16 @@ export default function DashboardDireccion() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Rentabilidad — {nombreMes(mes)}</h1>
-          <p className="text-sm text-slate-500">¿Cuánto vendimos, cuánto costó, cuánto ganamos?</p>
+          <h1 className="text-xl font-semibold text-ink-900">Rentabilidad — {nombreMes(mes)}</h1>
+          <p className="text-sm text-ink-500">¿Cuánto vendimos, cuánto costó, cuánto ganamos?</p>
         </div>
-        <label className="flex flex-col text-xs font-medium text-slate-600">
+        <label className="flex flex-col text-xs font-medium text-ink-600">
           Periodo
           <input
             type="month"
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
           />
         </label>
       </div>
@@ -83,7 +83,7 @@ export default function DashboardDireccion() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-slate-700">Liquidez</h2>
+        <h2 className="mb-3 text-sm font-semibold text-ink-700">Liquidez</h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard label="Disponibilidad bancaria" value={formatCurrency(resumen?.disponibilidadBancaria)} hint="Saldo actual, no depende del mes elegido" />
           <StatCard label="Caja disponible" value={formatCurrency(resumen?.cajaDisponible)} />

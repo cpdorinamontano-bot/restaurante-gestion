@@ -89,7 +89,7 @@ export default function CajaForm() {
 
   return (
     <div className="mx-auto max-w-xl space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Movimiento de caja</h1>
+      <h1 className="text-xl font-semibold text-ink-900">Movimiento de caja</h1>
 
       <Card>
         <CardHeader>
@@ -157,7 +157,7 @@ export default function CajaForm() {
               <Field label="Saldo físico contado">
                 <Input type="number" step="0.01" required value={saldoFisico} onChange={(e) => setSaldoFisico(e.target.value)} />
               </Field>
-              {cierreMsg && <p className="text-sm text-slate-700">{cierreMsg}</p>}
+              {cierreMsg && <p className="text-sm text-ink-700">{cierreMsg}</p>}
               <Button type="submit" disabled={cerrando || !cajaId}>
                 {cerrando ? "Cerrando…" : "Confirmar cierre"}
               </Button>

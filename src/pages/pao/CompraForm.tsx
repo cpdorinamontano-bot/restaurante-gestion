@@ -86,7 +86,7 @@ export default function CompraForm() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Registrar compra</h1>
+      <h1 className="text-xl font-semibold text-ink-900">Registrar compra</h1>
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>

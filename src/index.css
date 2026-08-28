@@ -5,13 +5,25 @@
 @layer base {
   html {
     @apply antialiased;
+    font-feature-settings: "cv11", "ss01";
   }
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-ink-50 text-ink-900;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 }
 
 @layer utilities {
+  .font-display {
+    font-family: "Newsreader", ui-serif, Georgia, serif;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
   .scrollbar-thin {
     scrollbar-width: thin;
   }

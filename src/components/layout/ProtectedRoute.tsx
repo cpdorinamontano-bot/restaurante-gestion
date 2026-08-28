@@ -12,7 +12,7 @@ export function ProtectedRoute({
   const { session, roles, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-slate-500">Cargando…</div>;
+    return <div className="flex min-h-screen items-center justify-center text-ink-500">Cargando…</div>;
   }
   if (!session) {
     return <Navigate to="/login" replace />;

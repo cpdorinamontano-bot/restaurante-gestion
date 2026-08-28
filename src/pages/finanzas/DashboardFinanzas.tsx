@@ -39,8 +39,8 @@ export default function DashboardFinanzas() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Panel de Finanzas</h1>
-          <p className="text-sm text-slate-500">Validación, conciliación y trazabilidad</p>
+          <h1 className="text-xl font-semibold text-ink-900">Panel de Finanzas</h1>
+          <p className="text-sm text-ink-500">Validación, conciliación y trazabilidad</p>
         </div>
         <Link to="/finanzas/cierre-mensual" className="text-sm font-medium text-brand-700 hover:underline">
           Ir a cierre mensual →
@@ -63,10 +63,10 @@ export default function DashboardFinanzas() {
         </CardHeader>
         <CardContent>
           {!data?.ventasPendientes.length ? (
-            <p className="text-sm text-slate-500">No hay diferencias pendientes.</p>
+            <p className="text-sm text-ink-500">No hay diferencias pendientes.</p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500">
+              <thead className="text-left text-xs uppercase text-ink-500">
                 <tr>
                   <th className="pb-2">Fecha</th>
                   <th className="pb-2">Venta neta</th>
@@ -77,7 +77,7 @@ export default function DashboardFinanzas() {
               </thead>
               <tbody>
                 {data.ventasPendientes.map((v: any) => (
-                  <tr key={v.venta_id} className="border-t border-slate-100">
+                  <tr key={v.venta_id} className="border-t border-ink-100">
                     <td className="py-2">{formatDate(v.fecha)}</td>
                     <td className="py-2">{formatCurrency(v.venta_neta)}</td>
                     <td className="py-2">{formatCurrency(v.total_formas_pago)}</td>
@@ -99,10 +99,10 @@ export default function DashboardFinanzas() {
         </CardHeader>
         <CardContent>
           {!data?.cxp.length ? (
-            <p className="text-sm text-slate-500">Sin cuentas por pagar registradas.</p>
+            <p className="text-sm text-ink-500">Sin cuentas por pagar registradas.</p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="text-left text-xs uppercase text-slate-500">
+              <thead className="text-left text-xs uppercase text-ink-500">
                 <tr>
                   <th className="pb-2">Proveedor</th>
                   <th className="pb-2">Vencimiento</th>
@@ -113,7 +113,7 @@ export default function DashboardFinanzas() {
               </thead>
               <tbody>
                 {data.cxp.map((c: any) => (
-                  <tr key={c.cuenta_por_pagar_id} className="border-t border-slate-100">
+                  <tr key={c.cuenta_por_pagar_id} className="border-t border-ink-100">
                     <td className="py-2">{c.proveedor_nombre}</td>
                     <td className="py-2">{formatDate(c.fecha_vencimiento)}</td>
                     <td className="py-2">{formatCurrency(c.saldo)}</td>
@@ -135,7 +135,7 @@ export default function DashboardFinanzas() {
         </CardHeader>
         <CardContent>
           {!data?.alertas.length ? (
-            <p className="text-sm text-slate-500">Sin alertas pendientes.</p>
+            <p className="text-sm text-ink-500">Sin alertas pendientes.</p>
           ) : (
             <ul className="space-y-2">
               {data.alertas.map((a: any) => (

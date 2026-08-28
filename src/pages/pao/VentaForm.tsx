@@ -71,7 +71,7 @@ export default function VentaForm() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Registrar venta</h1>
+      <h1 className="text-xl font-semibold text-ink-900">Registrar venta</h1>
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>

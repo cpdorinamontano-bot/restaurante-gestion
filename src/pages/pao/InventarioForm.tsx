@@ -84,7 +84,7 @@ export default function InventarioForm() {
   if (!conteoId) {
     return (
       <div className="mx-auto max-w-md space-y-4">
-        <h1 className="text-xl font-semibold text-slate-900">Registrar inventario</h1>
+        <h1 className="text-xl font-semibold text-ink-900">Registrar inventario</h1>
         <Card>
           <CardHeader>
             <CardTitle>Nuevo conteo físico</CardTitle>
@@ -113,8 +113,8 @@ export default function InventarioForm() {
   if (cerrado) {
     return (
       <div className="mx-auto max-w-md space-y-4 text-center">
-        <h1 className="text-xl font-semibold text-slate-900">Conteo cerrado</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-xl font-semibold text-ink-900">Conteo cerrado</h1>
+        <p className="text-sm text-ink-500">
           Los ajustes de inventario se generaron automáticamente para las diferencias detectadas.
         </p>
         <Button onClick={() => navigate("/pao")}>Volver</Button>
@@ -124,7 +124,7 @@ export default function InventarioForm() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Conteo físico de inventario</h1>
+      <h1 className="text-xl font-semibold text-ink-900">Conteo físico de inventario</h1>
       <Card>
         <CardHeader>
           <CardTitle>Existencias contadas</CardTitle>

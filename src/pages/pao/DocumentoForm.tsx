@@ -50,7 +50,7 @@ export default function DocumentoForm() {
 
   return (
     <div className="mx-auto max-w-md space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Subir documento</h1>
+      <h1 className="text-xl font-semibold text-ink-900">Subir documento</h1>
       <Card>
         <CardHeader>
           <CardTitle>Nuevo documento</CardTitle>

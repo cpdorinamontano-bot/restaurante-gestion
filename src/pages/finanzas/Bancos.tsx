@@ -40,14 +40,14 @@ export default function Bancos() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">Bancos</h1>
-        <label className="flex flex-col text-xs font-medium text-slate-600">
+        <h1 className="text-xl font-semibold text-ink-900">Bancos</h1>
+        <label className="flex flex-col text-xs font-medium text-ink-600">
           Mes
           <input
             type="month"
             value={mes}
             onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
           />
         </label>
       </div>
@@ -65,13 +65,13 @@ export default function Bancos() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-sm text-slate-500">Cargando…</p>
+            <p className="text-sm text-ink-500">Cargando…</p>
           ) : !movimientos?.length ? (
-            <p className="text-sm text-slate-500">Sin movimientos en este mes.</p>
+            <p className="text-sm text-ink-500">Sin movimientos en este mes.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-xs uppercase text-slate-500">
+                <thead className="text-left text-xs uppercase text-ink-500">
                   <tr>
                     <th className="pb-2">Fecha</th>
                     <th className="pb-2">Concepto</th>
@@ -82,10 +82,10 @@ export default function Bancos() {
                 </thead>
                 <tbody>
                   {movimientos.map((m: any) => (
-                    <tr key={m.id} className="border-t border-slate-100">
+                    <tr key={m.id} className="border-t border-ink-100">
                       <td className="py-1.5">{formatDate(m.fecha)}</td>
                       <td className="py-1.5">{m.concepto}</td>
-                      <td className="py-1.5 text-slate-500">{m.tipo_movimiento}</td>
+                      <td className="py-1.5 text-ink-500">{m.tipo_movimiento}</td>
                       <td className="py-1.5 text-right text-rose-700">{Number(m.cargo) > 0 ? formatCurrency(m.cargo) : ""}</td>
                       <td className="py-1.5 text-right text-emerald-700">{Number(m.abono) > 0 ? formatCurrency(m.abono) : ""}</td>
                     </tr>

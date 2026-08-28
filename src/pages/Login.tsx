@@ -28,10 +28,10 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-ink-50 px-4">
       <Card className="w-full max-w-sm p-6">
-        <h1 className="text-lg font-semibold text-slate-900">Bianco Storico</h1>
-        <p className="mt-1 text-sm text-slate-500">Sistema de gestión — inicia sesión para continuar</p>
+        <h1 className="text-lg font-semibold text-ink-900">Bianco Storico</h1>
+        <p className="mt-1 text-sm text-ink-500">Sistema de gestión — inicia sesión para continuar</p>
         <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
           <Field label="Correo electrónico">
             <Input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />

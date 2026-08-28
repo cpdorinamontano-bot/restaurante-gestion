@@ -6,7 +6,7 @@ const styles: Record<Semaforo, string> = {
   verde: "bg-emerald-100 text-emerald-800",
   amarillo: "bg-amber-100 text-amber-800",
   rojo: "bg-rose-100 text-rose-800",
-  neutral: "bg-slate-100 text-slate-700",
+  neutral: "bg-ink-100 text-ink-700",
 };
 
 export function Badge({ tone = "neutral", children }: { tone?: Semaforo; children: React.ReactNode }) {
@@ -22,7 +22,7 @@ export function SemaforoDot({ tone }: { tone: Semaforo }) {
     verde: "bg-semaforo-verde",
     amarillo: "bg-semaforo-amarillo",
     rojo: "bg-semaforo-rojo",
-    neutral: "bg-slate-300",
+    neutral: "bg-ink-300",
   };
   return <span className={cn("inline-block h-2.5 w-2.5 rounded-full", colors[tone])} />;
 }

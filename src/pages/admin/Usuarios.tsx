@@ -57,21 +57,21 @@ export default function Usuarios() {
     cargar();
   }
 
-  if (loading) return <p className="text-sm text-slate-500">Cargando…</p>;
+  if (loading) return <p className="text-sm text-ink-500">Cargando…</p>;
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold text-slate-900">Usuarios y permisos</h1>
+      <h1 className="text-xl font-semibold text-ink-900">Usuarios y permisos</h1>
       <Card>
         <CardHeader>
           <CardTitle>Usuarios del sistema</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {usuarios.map((u) => (
-            <div key={u.id} className="flex flex-col gap-2 border-b border-slate-100 pb-4 last:border-0 md:flex-row md:items-center md:justify-between">
+            <div key={u.id} className="flex flex-col gap-2 border-b border-ink-100 pb-4 last:border-0 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-800">{u.nombre}</p>
-                <p className="text-xs text-slate-500">{u.email}</p>
+                <p className="text-sm font-medium text-ink-800">{u.nombre}</p>
+                <p className="text-xs text-ink-500">{u.email}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {u.roles.map((r) => (
