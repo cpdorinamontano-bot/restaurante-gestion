@@ -15,7 +15,7 @@ export function AppShell({ navItems, titulo }: { navItems: NavItem[]; titulo: st
     <div className="flex min-h-screen bg-slate-50">
       <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-5">
-          <p className="text-sm font-semibold text-slate-900">Restaurante</p>
+          <p className="text-sm font-semibold text-slate-900">Bianco Storico</p>
           <p className="text-xs text-slate-500">{titulo}</p>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
