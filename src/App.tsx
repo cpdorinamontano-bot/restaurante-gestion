@@ -24,6 +24,7 @@ import CierreMensual from "@/pages/finanzas/CierreMensual";
 import Bancos from "@/pages/finanzas/Bancos";
 import GastosLista from "@/pages/finanzas/Gastos";
 import ReporteMensual from "@/pages/finanzas/ReporteMensual";
+import ReporteAcumulado from "@/pages/finanzas/ReporteAcumulado";
 
 import Usuarios from "@/pages/admin/Usuarios";
 
@@ -43,11 +44,13 @@ const NAV_ADMINISTRACION = [
 const NAV_DIRECCION = [
   { to: "/direccion", label: "Rentabilidad" },
   { to: "/direccion/reporte-mensual", label: "Reporte mensual" },
+  { to: "/direccion/acumulado", label: "Mes a mes y acumulado" },
 ];
 
 const NAV_FINANZAS = [
   { to: "/finanzas", label: "Panel" },
   { to: "/finanzas/reporte-mensual", label: "Reporte mensual" },
+  { to: "/finanzas/acumulado", label: "Mes a mes y acumulado" },
   { to: "/finanzas/bancos", label: "Bancos" },
   { to: "/finanzas/gastos", label: "Gastos" },
   { to: "/finanzas/cierre-mensual", label: "Cierre mensual" },
@@ -103,6 +106,7 @@ export default function App() {
             >
               <Route index element={<DashboardDireccion />} />
               <Route path="reporte-mensual" element={<ReporteMensual />} />
+              <Route path="acumulado" element={<ReporteAcumulado />} />
             </Route>
 
             <Route
@@ -115,6 +119,7 @@ export default function App() {
             >
               <Route index element={<DashboardFinanzas />} />
               <Route path="reporte-mensual" element={<ReporteMensual />} />
+              <Route path="acumulado" element={<ReporteAcumulado />} />
               <Route path="bancos" element={<Bancos />} />
               <Route path="gastos" element={<GastosLista />} />
               <Route path="cierre-mensual" element={<CierreMensual />} />

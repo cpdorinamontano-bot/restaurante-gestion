@@ -283,3 +283,194 @@ export async function fetchReporteMensual(sucursalId: string, periodoInicio: str
     obligacionesPendientes,
   };
 }
+
+function mergeDesglose(listas: DesgloseItem[][]): DesgloseItem[] {
+  const mapa = new Map<string, number>();
+  listas.flat().forEach((it) => mapa.set(it.nombre, (mapa.get(it.nombre) ?? 0) + it.monto));
+  return [...mapa.entries()].map(([nombre, monto]) => ({ nombre, monto })).sort((a, b) => b.monto - a.monto);
+}
+
+function pct(num: number, den: number): number | null {
+  return den > 0 ? Number(((num / den) * 100).toFixed(2)) : null;
+}
+
+/** Combina varios meses en un solo total "Acumulado": suma los montos y recalcula los % sobre las bases sumadas. */
+export function sumarPeriodos(reportes: ReporteMensual[]): ReporteMensual {
+  const sum = (f: (r: ReporteMensual) => number) => reportes.reduce((s, r) => s + f(r), 0);
+  const ventasNeta = sum((r) => r.ventasNeta);
+  const cmv = sum((r) => r.cmv);
+  const costoLaboralTotal = sum((r) => r.costoLaboralTotal);
+  const gastosFijosTotal = sum((r) => r.gastosFijosTotal);
+  const gastosVariablesTotal = sum((r) => r.gastosVariablesTotal);
+  const impuestosGasto = sum((r) => r.impuestosGasto);
+  const margenBruto = reportes.some((r) => r.cmvFuente !== "sin_datos") ? ventasNeta - cmv : null;
+  const resultadoOperativo = margenBruto !== null ? margenBruto - costoLaboralTotal - gastosFijosTotal - gastosVariablesTotal : null;
+  const gananciaNeta = resultadoOperativo !== null ? resultadoOperativo - impuestosGasto : null;
+  const flujoIngresos = sum((r) => r.flujoIngresos);
+  const flujoEgresos = sum((r) => r.flujoEgresos);
+  const hayVentas = reportes.some((r) => r.ventasFuente !== "sin_datos");
+  const hayCmv = reportes.some((r) => r.cmvFuente !== "sin_datos");
+
+  return {
+    periodo: "ACUMULADO",
+    sucursalId: reportes[0]?.sucursalId ?? "",
+    ventasBruta: sum((r) => r.ventasBruta),
+    ventasNeta,
+    ventasFuente: hayVentas ? "ingresos_bancos_caja" : "sin_datos",
+    descuentos: null,
+    devoluciones: null,
+    cancelaciones: null,
+    cortesias: reportes.some((r) => r.cortesias !== null) ? sum((r) => r.cortesias ?? 0) : null,
+    numVentas: sum((r) => r.numVentas),
+    cmv,
+    cmvFuente: hayCmv ? "gastos_historico" : "sin_datos",
+    cmvPorCategoria: mergeDesglose(reportes.map((r) => r.cmvPorCategoria)),
+    foodCostPct: hayCmv ? pct(cmv, ventasNeta) : null,
+    foodCostTeoricoPct: null,
+    costoLaboralNomina: sum((r) => r.costoLaboralNomina),
+    costoLaboralGastoHistorico: sum((r) => r.costoLaboralGastoHistorico),
+    costoLaboralTotal,
+    costoLaboralPct: pct(costoLaboralTotal, ventasNeta),
+    gastosFijos: mergeDesglose(reportes.map((r) => r.gastosFijos)),
+    gastosFijosTotal,
+    gastosVariables: mergeDesglose(reportes.map((r) => r.gastosVariables)),
+    gastosVariablesTotal,
+    gastosOperativosPct: pct(gastosFijosTotal + gastosVariablesTotal + costoLaboralTotal, ventasNeta),
+    impuestosGasto,
+    margenBruto,
+    margenBrutoPct: margenBruto !== null ? pct(margenBruto, ventasNeta) : null,
+    resultadoOperativo,
+    resultadoOperativoPct: resultadoOperativo !== null ? pct(resultadoOperativo, ventasNeta) : null,
+    gananciaNeta,
+    gananciaNetaPct: gananciaNeta !== null ? pct(gananciaNeta, ventasNeta) : null,
+    flujoIngresos,
+    flujoEgresos,
+    flujoNeto: flujoIngresos - flujoEgresos,
+    saldoBancarioActual: reportes.at(-1)?.saldoBancarioActual ?? null,
+    cxpPendiente: reportes.at(-1)?.cxpPendiente ?? 0,
+    obligacionesPendientes: reportes.at(-1)?.obligacionesPendientes ?? 0,
+  };
+}
+
+export type MetricaDiaria = "ventas" | "cmv" | "laboral" | "gastos_fijos" | "gastos_variables" | "ingresos" | "egresos";
+
+export interface DiaDetalle {
+  fecha: string;
+  monto: number;
+}
+
+function agruparPorFecha(filas: { fecha: string; monto: number }[]): DiaDetalle[] {
+  const mapa = new Map<string, number>();
+  filas.forEach((f) => mapa.set(f.fecha, (mapa.get(f.fecha) ?? 0) + f.monto));
+  return [...mapa.entries()].map(([fecha, monto]) => ({ fecha, monto })).sort((a, b) => a.fecha.localeCompare(b.fecha));
+}
+
+export async function fetchDesgloseDiario(
+  sucursalId: string,
+  metrica: MetricaDiaria,
+  inicio: string,
+  fin: string
+): Promise<DiaDetalle[]> {
+  switch (metrica) {
+    case "ventas": {
+      const { data: ventas } = await supabase
+        .from("ventas")
+        .select("fecha, venta_neta")
+        .eq("sucursal_id", sucursalId)
+        .eq("estatus", "activo")
+        .gte("fecha", inicio)
+        .lte("fecha", fin);
+      if (ventas && ventas.length) {
+        return agruparPorFecha(ventas.map((v) => ({ fecha: v.fecha, monto: Number(v.venta_neta ?? 0) })));
+      }
+      const [{ data: mb }, { data: mc }] = await Promise.all([
+        supabase.from("movimientos_bancarios").select("fecha, abono").gte("fecha", inicio).lte("fecha", fin),
+        supabase
+          .from("movimientos_caja")
+          .select("fecha, importe, tipo_movimiento")
+          .gte("fecha", inicio)
+          .lte("fecha", fin)
+          .in("tipo_movimiento", ["venta_efectivo", "entrada", "deposito", "reposicion"]),
+      ]);
+      return agruparPorFecha([
+        ...(mb ?? []).map((m) => ({ fecha: m.fecha, monto: Number(m.abono ?? 0) })),
+        ...(mc ?? []).map((m) => ({ fecha: m.fecha, monto: Number(m.importe ?? 0) })),
+      ]);
+    }
+    case "cmv": {
+      const { data: compras } = await supabase
+        .from("compras")
+        .select("fecha, subtotal")
+        .eq("estatus", "activo")
+        .gte("fecha", inicio)
+        .lte("fecha", fin);
+      if (compras && compras.length) {
+        return agruparPorFecha(compras.map((c) => ({ fecha: c.fecha, monto: Number(c.subtotal ?? 0) })));
+      }
+      const { data: gastos } = await supabase
+        .from("gastos")
+        .select("fecha, subtotal, impuestos, categorias_gastos!inner(nombre)")
+        .eq("estatus", "activo")
+        .gte("fecha", inicio)
+        .lte("fecha", fin)
+        .ilike("categorias_gastos.nombre", "%compra%");
+      return agruparPorFecha((gastos ?? []).map((g) => ({ fecha: g.fecha, monto: Number(g.subtotal ?? 0) + Number(g.impuestos ?? 0) })));
+    }
+    case "laboral": {
+      const { data: gastos } = await supabase
+        .from("gastos")
+        .select("fecha, subtotal, impuestos, categorias_gastos!inner(nombre)")
+        .eq("estatus", "activo")
+        .gte("fecha", inicio)
+        .lte("fecha", fin)
+        .ilike("categorias_gastos.nombre", "%nómina%");
+      return agruparPorFecha((gastos ?? []).map((g) => ({ fecha: g.fecha, monto: Number(g.subtotal ?? 0) + Number(g.impuestos ?? 0) })));
+    }
+    case "gastos_fijos":
+    case "gastos_variables": {
+      const { data: gastos } = await supabase
+        .from("gastos")
+        .select("fecha, subtotal, impuestos, categorias_gastos(nombre, tipo)")
+        .eq("estatus", "activo")
+        .gte("fecha", inicio)
+        .lte("fecha", fin);
+      const filas = (gastos ?? []).filter((g: any) => {
+        const nombre: string = g.categorias_gastos?.nombre ?? "";
+        if (/nómina|nomina|impuesto|compra/i.test(nombre)) return false;
+        const tipo = g.categorias_gastos?.tipo ?? "operativo";
+        return metrica === "gastos_fijos" ? tipo === "fijo" : tipo !== "fijo";
+      });
+      return agruparPorFecha(filas.map((g: any) => ({ fecha: g.fecha, monto: Number(g.subtotal ?? 0) + Number(g.impuestos ?? 0) })));
+    }
+    case "ingresos": {
+      const [{ data: mb }, { data: mc }] = await Promise.all([
+        supabase.from("movimientos_bancarios").select("fecha, abono").gte("fecha", inicio).lte("fecha", fin),
+        supabase
+          .from("movimientos_caja")
+          .select("fecha, importe, tipo_movimiento")
+          .gte("fecha", inicio)
+          .lte("fecha", fin)
+          .in("tipo_movimiento", ["venta_efectivo", "entrada", "deposito", "reposicion"]),
+      ]);
+      return agruparPorFecha([
+        ...(mb ?? []).map((m) => ({ fecha: m.fecha, monto: Number(m.abono ?? 0) })),
+        ...(mc ?? []).map((m) => ({ fecha: m.fecha, monto: Number(m.importe ?? 0) })),
+      ]);
+    }
+    case "egresos": {
+      const [{ data: mb }, { data: mc }] = await Promise.all([
+        supabase.from("movimientos_bancarios").select("fecha, cargo").gte("fecha", inicio).lte("fecha", fin),
+        supabase
+          .from("movimientos_caja")
+          .select("fecha, importe, tipo_movimiento")
+          .gte("fecha", inicio)
+          .lte("fecha", fin)
+          .in("tipo_movimiento", ["salida", "retiro", "gasto"]),
+      ]);
+      return agruparPorFecha([
+        ...(mb ?? []).map((m) => ({ fecha: m.fecha, monto: Number(m.cargo ?? 0) })),
+        ...(mc ?? []).map((m) => ({ fecha: m.fecha, monto: Number(m.importe ?? 0) })),
+      ]);
+    }
+  }
+}
