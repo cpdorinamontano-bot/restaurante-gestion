@@ -21,6 +21,8 @@ import DashboardDireccion from "@/pages/direccion/DashboardDireccion";
 
 import DashboardFinanzas from "@/pages/finanzas/DashboardFinanzas";
 import CierreMensual from "@/pages/finanzas/CierreMensual";
+import Bancos from "@/pages/finanzas/Bancos";
+import GastosLista from "@/pages/finanzas/Gastos";
 
 import Usuarios from "@/pages/admin/Usuarios";
 
@@ -41,6 +43,8 @@ const NAV_DIRECCION = [{ to: "/direccion", label: "Rentabilidad" }];
 
 const NAV_FINANZAS = [
   { to: "/finanzas", label: "Panel" },
+  { to: "/finanzas/bancos", label: "Bancos" },
+  { to: "/finanzas/gastos", label: "Gastos" },
   { to: "/finanzas/cierre-mensual", label: "Cierre mensual" },
 ];
 
@@ -104,6 +108,8 @@ export default function App() {
               }
             >
               <Route index element={<DashboardFinanzas />} />
+              <Route path="bancos" element={<Bancos />} />
+              <Route path="gastos" element={<GastosLista />} />
               <Route path="cierre-mensual" element={<CierreMensual />} />
             </Route>
 
