@@ -8,12 +8,12 @@ import { formatCurrency } from "@/lib/utils";
 import { Banknote, ShoppingCart, Receipt, Landmark, PackageSearch, FileUp, AlertCircle } from "lucide-react";
 
 const ACCIONES = [
-  { to: "/pao/ventas", label: "Registrar venta", icon: Banknote },
-  { to: "/pao/compras", label: "Registrar compra", icon: ShoppingCart },
-  { to: "/pao/gastos", label: "Registrar gasto", icon: Receipt },
-  { to: "/pao/caja", label: "Movimiento de caja", icon: Landmark },
-  { to: "/pao/inventario", label: "Registrar inventario", icon: PackageSearch },
-  { to: "/pao/documentos", label: "Subir documento", icon: FileUp },
+  { to: "/administracion/ventas", label: "Registrar venta", icon: Banknote },
+  { to: "/administracion/compras", label: "Registrar compra", icon: ShoppingCart },
+  { to: "/administracion/gastos", label: "Registrar gasto", icon: Receipt },
+  { to: "/administracion/caja", label: "Movimiento de caja", icon: Landmark },
+  { to: "/administracion/inventario", label: "Registrar inventario", icon: PackageSearch },
+  { to: "/administracion/documentos", label: "Subir documento", icon: FileUp },
 ];
 
 export default function Hoy() {

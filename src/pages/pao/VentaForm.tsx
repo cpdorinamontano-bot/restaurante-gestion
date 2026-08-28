@@ -61,7 +61,7 @@ export default function VentaForm() {
         if (fpError) throw fpError;
       }
 
-      navigate("/pao");
+      navigate("/administracion");
     } catch (err: any) {
       setError(err.message ?? "Error al guardar la venta");
     } finally {
@@ -138,7 +138,7 @@ export default function VentaForm() {
           <Button type="submit" disabled={saving}>
             {saving ? "Guardando…" : "Guardar venta"}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => navigate("/pao")}>
+          <Button type="button" variant="secondary" onClick={() => navigate("/administracion")}>
             Cancelar
           </Button>
         </div>

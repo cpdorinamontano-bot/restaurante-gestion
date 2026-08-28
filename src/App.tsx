@@ -29,15 +29,15 @@ import Usuarios from "@/pages/admin/Usuarios";
 
 const queryClient = new QueryClient();
 
-const NAV_PAO = [
-  { to: "/pao", label: "Hoy" },
-  { to: "/pao/ventas", label: "Ventas" },
-  { to: "/pao/compras", label: "Compras" },
-  { to: "/pao/gastos", label: "Gastos" },
-  { to: "/pao/caja", label: "Caja" },
-  { to: "/pao/inventario", label: "Inventario" },
-  { to: "/pao/documentos", label: "Documentos" },
-  { to: "/pao/cierre-diario", label: "Cierre del día" },
+const NAV_ADMINISTRACION = [
+  { to: "/administracion", label: "Hoy" },
+  { to: "/administracion/ventas", label: "Ventas" },
+  { to: "/administracion/compras", label: "Compras" },
+  { to: "/administracion/gastos", label: "Gastos" },
+  { to: "/administracion/caja", label: "Caja" },
+  { to: "/administracion/inventario", label: "Inventario" },
+  { to: "/administracion/documentos", label: "Documentos" },
+  { to: "/administracion/cierre-diario", label: "Cierre del día" },
 ];
 
 const NAV_DIRECCION = [
@@ -76,10 +76,10 @@ export default function App() {
             <Route path="/sin-acceso" element={<SinAcceso />} />
 
             <Route
-              path="/pao"
+              path="/administracion"
               element={
                 <ProtectedRoute allow={["admin_pao", "admin_sistema"]}>
-                  <AppShell navItems={NAV_PAO} titulo="Administración / PAO" />
+                  <AppShell navItems={NAV_ADMINISTRACION} titulo="Administración" />
                 </ProtectedRoute>
               }
             >

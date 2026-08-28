@@ -50,7 +50,7 @@ export default function GastoForm() {
         observacion: observacion || null,
       });
       if (gastoError) throw gastoError;
-      navigate("/pao");
+      navigate("/administracion");
     } catch (err: any) {
       setError(err.message ?? "Error al guardar el gasto");
     } finally {
@@ -147,7 +147,7 @@ export default function GastoForm() {
           <Button type="submit" disabled={saving}>
             {saving ? "Guardando…" : "Guardar gasto"}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => navigate("/pao")}>
+          <Button type="button" variant="secondary" onClick={() => navigate("/administracion")}>
             Cancelar
           </Button>
         </div>

@@ -76,7 +76,7 @@ export default function CompraForm() {
       const { error: detalleError } = await supabase.from("compras_detalle").insert(filas);
       if (detalleError) throw detalleError;
 
-      navigate("/pao");
+      navigate("/administracion");
     } catch (err: any) {
       setError(err.message ?? "Error al guardar la compra");
     } finally {
@@ -204,7 +204,7 @@ export default function CompraForm() {
           <Button type="submit" disabled={saving}>
             {saving ? "Guardando…" : "Guardar compra"}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => navigate("/pao")}>
+          <Button type="button" variant="secondary" onClick={() => navigate("/administracion")}>
             Cancelar
           </Button>
         </div>

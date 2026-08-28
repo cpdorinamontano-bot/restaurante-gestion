@@ -40,7 +40,7 @@ export default function DocumentoForm() {
       });
       if (dbError) throw dbError;
 
-      navigate("/pao");
+      navigate("/administracion");
     } catch (err: any) {
       setError(err.message ?? "Error al subir el documento");
     } finally {
@@ -77,7 +77,7 @@ export default function DocumentoForm() {
               <Button type="submit" disabled={saving || !file}>
                 {saving ? "Subiendo…" : "Subir documento"}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => navigate("/pao")}>
+              <Button type="button" variant="secondary" onClick={() => navigate("/administracion")}>
                 Cancelar
               </Button>
             </div>

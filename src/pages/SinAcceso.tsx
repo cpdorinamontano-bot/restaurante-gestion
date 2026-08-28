@@ -8,7 +8,7 @@ export default function SinAcceso() {
       <h1 className="text-lg font-semibold text-ink-900">Sin acceso</h1>
       <p className="max-w-sm text-sm text-ink-500">
         Tu usuario no tiene un rol asignado en el sistema. Contacta al administrador para que te asigne
-        un perfil (PAO, Dirección, Finanzas o Administrador).
+        un perfil (Administración, Dirección, Finanzas o Administrador).
       </p>
       <Button variant="secondary" onClick={() => signOut()}>
         Cerrar sesión

@@ -99,7 +99,7 @@ export default function InventarioForm() {
                 <Button type="submit" disabled={creando}>
                   {creando ? "Creando…" : "Iniciar conteo"}
                 </Button>
-                <Button type="button" variant="secondary" onClick={() => navigate("/pao")}>
+                <Button type="button" variant="secondary" onClick={() => navigate("/administracion")}>
                   Cancelar
                 </Button>
               </div>
@@ -117,7 +117,7 @@ export default function InventarioForm() {
         <p className="text-sm text-ink-500">
           Los ajustes de inventario se generaron automáticamente para las diferencias detectadas.
         </p>
-        <Button onClick={() => navigate("/pao")}>Volver</Button>
+        <Button onClick={() => navigate("/administracion")}>Volver</Button>
       </div>
     );
   }
@@ -169,7 +169,7 @@ export default function InventarioForm() {
         <Button onClick={cerrarConteo} disabled={cerrando}>
           {cerrando ? "Cerrando…" : "Cerrar conteo y generar ajustes"}
         </Button>
-        <Button variant="secondary" onClick={() => navigate("/pao")}>
+        <Button variant="secondary" onClick={() => navigate("/administracion")}>
           Guardar y salir
         </Button>
       </div>

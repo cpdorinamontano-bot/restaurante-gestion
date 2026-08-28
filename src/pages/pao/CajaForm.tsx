@@ -53,7 +53,7 @@ export default function CajaForm() {
         notas: notas || null,
       });
       if (movError) throw movError;
-      navigate("/pao");
+      navigate("/administracion");
     } catch (err: any) {
       setError(err.message ?? "Error al registrar el movimiento");
     } finally {
@@ -135,7 +135,7 @@ export default function CajaForm() {
               <Button type="submit" disabled={saving}>
                 {saving ? "Guardando…" : "Registrar movimiento"}
               </Button>
-              <Button type="button" variant="secondary" onClick={() => navigate("/pao")}>
+              <Button type="button" variant="secondary" onClick={() => navigate("/administracion")}>
                 Cancelar
               </Button>
             </div>

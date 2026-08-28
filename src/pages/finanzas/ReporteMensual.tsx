@@ -146,7 +146,7 @@ export default function ReporteMensual() {
           {actual.ventasNeta === 0 && (
             <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>No hay ventas capturadas en el módulo de Ventas para este periodo. Los porcentajes sobre ventas se muestran como PENDIENTE hasta que Pao registre las ventas del día.</span>
+              <span>No hay ventas capturadas en el módulo de Ventas para este periodo. Los porcentajes sobre ventas se muestran como PENDIENTE hasta que se registren las ventas del día en Administración.</span>
             </div>
           )}
 
