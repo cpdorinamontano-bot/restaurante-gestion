@@ -34,15 +34,17 @@ export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: strin
   doc.text(`Reporte Gerencial Mensual · ${sucursalNombre} · ${mes}`, 14, 24);
   doc.setTextColor(0, 0, 0);
 
+  const ventasFuenteNota =
+    r.ventasFuente === "ingresos_bancos_caja" ? " (= ingresos de banco y caja, sin módulo de Ventas)" : "";
   autoTable(doc, {
     startY: 30,
     head: [["Ventas", "Monto"]],
     body: [
-      ["Ventas totales (brutas)", formatCurrency(r.ventasBruta)],
+      [`Ventas totales (brutas)${ventasFuenteNota}`, formatCurrency(r.ventasFuente === "sin_datos" ? null : r.ventasBruta)],
       ["(-) Descuentos", formatCurrency(r.descuentos)],
       ["(-) Devoluciones", formatCurrency(r.devoluciones)],
       ["(-) Cancelaciones", formatCurrency(r.cancelaciones)],
-      ["Ventas netas", formatCurrency(r.ventasNeta)],
+      ["Ventas netas", formatCurrency(r.ventasFuente === "sin_datos" ? null : r.ventasNeta)],
       ["Cortesías (informativo, no resta de venta neta)", formatCurrency(r.cortesias)],
     ],
     theme: "grid",
@@ -132,6 +134,8 @@ export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: strin
 }
 
 export async function exportReporteMensualExcel(r: ReporteMensual, sucursalNombre: string) {
+  const ventasFuenteNota =
+    r.ventasFuente === "ingresos_bancos_caja" ? " (= ingresos de banco y caja, sin módulo de Ventas)" : "";
   const wb = new ExcelJS.Workbook();
   wb.creator = "Bianco Storico — Sistema de Gestión";
   const ws = wb.addWorksheet(`Reporte ${r.periodo.slice(0, 7)}`);
@@ -155,11 +159,11 @@ export async function exportReporteMensualExcel(r: ReporteMensual, sucursalNombr
   }
 
   seccion("Ventas");
-  fila("Ventas totales (brutas)", r.ventasBruta);
-  fila("(-) Descuentos", -r.descuentos);
-  fila("(-) Devoluciones", -r.devoluciones);
-  fila("(-) Cancelaciones", -r.cancelaciones);
-  fila("Ventas netas", r.ventasNeta);
+  fila(`Ventas totales (brutas)${ventasFuenteNota}`, r.ventasFuente === "sin_datos" ? null : r.ventasBruta);
+  fila("(-) Descuentos", r.descuentos === null ? null : -r.descuentos);
+  fila("(-) Devoluciones", r.devoluciones === null ? null : -r.devoluciones);
+  fila("(-) Cancelaciones", r.cancelaciones === null ? null : -r.cancelaciones);
+  fila("Ventas netas", r.ventasFuente === "sin_datos" ? null : r.ventasNeta);
   fila("Cortesías (informativo)", r.cortesias);
   ws.addRow([]);
 

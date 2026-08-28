@@ -11,10 +11,11 @@ export interface ReporteMensual {
 
   ventasBruta: number;
   ventasNeta: number;
-  descuentos: number;
-  devoluciones: number;
-  cancelaciones: number;
-  cortesias: number;
+  ventasFuente: "modulo_ventas" | "ingresos_bancos_caja" | "sin_datos";
+  descuentos: number | null;
+  devoluciones: number | null;
+  cancelaciones: number | null;
+  cortesias: number | null;
   numVentas: number;
 
   cmv: number; // costo de mercadería vendida (mejor fuente disponible)
@@ -118,13 +119,47 @@ export async function fetchReporteMensual(sucursalId: string, periodoInicio: str
     supabase.from("obligaciones").select("importe").eq("estatus", "activo").neq("estatus_pago", "pagada"),
   ]);
 
+  const movBancarios = movBancariosRes.data ?? [];
+  const movCaja = movCajaRes.data ?? [];
+  const flujoIngresos =
+    movBancarios.reduce((s, m) => s + Number(m.abono ?? 0), 0) +
+    movCaja
+      .filter((m) => ["venta_efectivo", "entrada", "deposito", "reposicion"].includes(m.tipo_movimiento))
+      .reduce((s, m) => s + Number(m.importe ?? 0), 0);
+  const flujoEgresos =
+    movBancarios.reduce((s, m) => s + Number(m.cargo ?? 0), 0) +
+    movCaja
+      .filter((m) => ["salida", "retiro", "gasto"].includes(m.tipo_movimiento))
+      .reduce((s, m) => s + Number(m.importe ?? 0), 0);
+
   const ventas = ventasRes.data ?? [];
-  const ventasBruta = ventas.reduce((s, v) => s + Number(v.venta_bruta ?? 0), 0);
-  const ventasNeta = ventas.reduce((s, v) => s + Number(v.venta_neta ?? 0), 0);
-  const descuentos = ventas.reduce((s, v) => s + Number(v.descuentos_total ?? 0), 0);
-  const devoluciones = ventas.reduce((s, v) => s + Number(v.devoluciones_total ?? 0), 0);
-  const cancelaciones = ventas.reduce((s, v) => s + Number(v.cancelaciones_total ?? 0), 0);
-  const cortesias = ventas.reduce((s, v) => s + Number(v.cortesias_total ?? 0), 0);
+  const ventasModuloBruta = ventas.reduce((s, v) => s + Number(v.venta_bruta ?? 0), 0);
+  const ventasModuloNeta = ventas.reduce((s, v) => s + Number(v.venta_neta ?? 0), 0);
+
+  // El módulo de Ventas es la fuente ideal (trae descuentos/devoluciones/cancelaciones
+  // desglosados). Cuando no se ha capturado ahí, los ingresos de banco y caja YA
+  // reflejan las ventas cobradas del periodo (así es como el negocio registró su
+  // ingreso históricamente) y se usan como venta neta, sin desglose de descuentos.
+  let ventasFuente: ReporteMensual["ventasFuente"] = "sin_datos";
+  let ventasBruta = 0;
+  let ventasNeta = 0;
+  let descuentos: number | null = null;
+  let devoluciones: number | null = null;
+  let cancelaciones: number | null = null;
+  let cortesias: number | null = null;
+  if (ventasModuloNeta > 0) {
+    ventasFuente = "modulo_ventas";
+    ventasBruta = ventasModuloBruta;
+    ventasNeta = ventasModuloNeta;
+    descuentos = ventas.reduce((s, v) => s + Number(v.descuentos_total ?? 0), 0);
+    devoluciones = ventas.reduce((s, v) => s + Number(v.devoluciones_total ?? 0), 0);
+    cancelaciones = ventas.reduce((s, v) => s + Number(v.cancelaciones_total ?? 0), 0);
+    cortesias = ventas.reduce((s, v) => s + Number(v.cortesias_total ?? 0), 0);
+  } else if (flujoIngresos > 0) {
+    ventasFuente = "ingresos_bancos_caja";
+    ventasBruta = flujoIngresos;
+    ventasNeta = flujoIngresos;
+  }
 
   const compras = comprasRes.data ?? [];
   const cmvPorCategoriaMap = new Map<string, number>();
@@ -178,6 +213,7 @@ export async function fetchReporteMensual(sucursalId: string, periodoInicio: str
       impuestosGasto += monto;
       return;
     }
+    if (/compra/i.test(nombre) && cmvFuente === "gastos_historico") return; // ya contado como CMV, no duplicar en gastos
     if (tipo === "fijo") {
       gastosFijosMap.set(nombre, (gastosFijosMap.get(nombre) ?? 0) + monto);
     } else {
@@ -201,19 +237,6 @@ export async function fetchReporteMensual(sucursalId: string, periodoInicio: str
   const gananciaNeta = resultadoOperativo !== null ? resultadoOperativo - impuestosGasto : null;
   const gananciaNetaPct = gananciaNeta !== null && ventasNeta > 0 ? Number(((gananciaNeta / ventasNeta) * 100).toFixed(2)) : null;
 
-  const movBancarios = movBancariosRes.data ?? [];
-  const movCaja = movCajaRes.data ?? [];
-  const flujoIngresos =
-    movBancarios.reduce((s, m) => s + Number(m.abono ?? 0), 0) +
-    movCaja
-      .filter((m) => ["venta_efectivo", "entrada", "deposito", "reposicion"].includes(m.tipo_movimiento))
-      .reduce((s, m) => s + Number(m.importe ?? 0), 0);
-  const flujoEgresos =
-    movBancarios.reduce((s, m) => s + Number(m.cargo ?? 0), 0) +
-    movCaja
-      .filter((m) => ["salida", "retiro", "gasto"].includes(m.tipo_movimiento))
-      .reduce((s, m) => s + Number(m.importe ?? 0), 0);
-
   const cuentas = cuentaRes.data ?? [];
   const saldoBancarioActual = cuentas.length ? cuentas.reduce((s, c) => s + Number(c.saldo_actual ?? 0), 0) : null;
 
@@ -225,6 +248,7 @@ export async function fetchReporteMensual(sucursalId: string, periodoInicio: str
     sucursalId,
     ventasBruta,
     ventasNeta,
+    ventasFuente,
     descuentos,
     devoluciones,
     cancelaciones,

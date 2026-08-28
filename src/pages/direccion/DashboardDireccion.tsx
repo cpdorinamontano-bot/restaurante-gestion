@@ -73,7 +73,8 @@ export default function DashboardDireccion() {
     },
   });
 
-  const sinVentasCapturadas = !!actual && actual.ventasNeta === 0;
+  const sinDatos = !!actual && actual.ventasFuente === "sin_datos";
+  const ventasDesdeIngresos = !!actual && actual.ventasFuente === "ingresos_bancos_caja";
 
   return (
     <div className="space-y-6">
@@ -101,11 +102,15 @@ export default function DashboardDireccion() {
         </div>
       </div>
 
-      {sinVentasCapturadas && !isLoading && (
+      {sinDatos && !isLoading && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Este mes no tiene ventas capturadas en el módulo de Ventas (tabla <code>ventas</code>), por lo que Ventas netas, Food
-          Cost y Margen bruto aparecen en $0. Los movimientos bancarios/caja y gastos importados sí están cargados — revísalos
-          en Finanzas → Bancos y en el detalle de Gastos.
+          Este mes no tiene ventas ni movimientos de banco/caja capturados — no hay información para calcular rentabilidad.
+        </div>
+      )}
+      {ventasDesdeIngresos && !isLoading && (
+        <div className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          Este mes no tiene detalle capturado en el módulo de Ventas — la venta neta se toma de los ingresos reales de banco y
+          caja del periodo.
         </div>
       )}
 

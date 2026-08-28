@@ -143,10 +143,21 @@ export default function ReporteMensual() {
         <p className="text-sm text-ink-500">Calculando reporte…</p>
       ) : (
         <>
-          {actual.ventasNeta === 0 && (
+          {actual.ventasFuente === "sin_datos" && (
             <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>No hay ventas capturadas en el módulo de Ventas para este periodo. Los porcentajes sobre ventas se muestran como PENDIENTE hasta que se registren las ventas del día en Administración.</span>
+              <span>No hay ventas ni ingresos capturados para este periodo. Los porcentajes sobre ventas se muestran como PENDIENTE hasta que se registre algo en Administración.</span>
+            </div>
+          )}
+          {actual.ventasFuente === "ingresos_bancos_caja" && (
+            <div className="flex items-start gap-2 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Este periodo no tiene detalle capturado en el módulo de Ventas, así que la venta neta se toma de los ingresos
+                reales de banco y caja (lo que efectivamente entró). No hay desglose de descuentos, devoluciones o
+                cancelaciones porque esa POS no se ha conectado todavía — en cuanto se capture venta a venta, este reporte usa
+                automáticamente ese detalle en su lugar.
+              </span>
             </div>
           )}
 
@@ -164,11 +175,14 @@ export default function ReporteMensual() {
               <CardTitle>Estado de resultados del periodo</CardTitle>
             </CardHeader>
             <CardContent className="divide-y divide-ink-50">
-              <Renglon label="Ventas totales (brutas)" monto={actual.ventasBruta} />
+              <Renglon
+                label={`Ventas totales (brutas)${actual.ventasFuente === "ingresos_bancos_caja" ? " (= ingresos de banco y caja)" : ""}`}
+                monto={actual.ventasFuente === "sin_datos" ? null : actual.ventasBruta}
+              />
               <Renglon label="(–) Descuentos" monto={actual.descuentos} negativo />
               <Renglon label="(–) Devoluciones" monto={actual.devoluciones} negativo />
               <Renglon label="(–) Cancelaciones" monto={actual.cancelaciones} negativo />
-              <Renglon label="Ventas netas" monto={actual.ventasNeta} resaltado />
+              <Renglon label="Ventas netas" monto={actual.ventasFuente === "sin_datos" ? null : actual.ventasNeta} resaltado />
               <Renglon
                 label={`(–) Compras y costo de mercadería vendida${actual.cmvFuente === "gastos_historico" ? " (estimado desde gastos)" : ""}`}
                 monto={actual.cmvFuente === "sin_datos" ? null : actual.cmv}
