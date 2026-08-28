@@ -1,94 +1,194 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFoodCostReal, useFoodCostTeorico, useLaborCost, useResumenMes } from "@/hooks/useIndicadores";
+import { fetchReporteMensual } from "@/lib/reportes";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+import { ArrowUpRight } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function nombreMes(periodoISO: string) {
   const [y, m] = periodoISO.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
 }
 
+function nombreMesCorto(periodoISO: string) {
+  const [y, m] = periodoISO.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString("es-MX", { month: "short" });
+}
+
+function ultimosPeriodos(mesActual: string, n: number) {
+  const [y, m] = mesActual.split("-").map(Number);
+  return Array.from({ length: n }, (_, i) => {
+    const d = new Date(y, m - 1 - (n - 1 - i), 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+}
+
 export default function DashboardDireccion() {
   const { sucursalId } = useAuth();
   const [mes, setMes] = useState("2026-03");
   const periodo = `${mes}-01`;
+  const periodos = useMemo(() => ultimosPeriodos(mes, 6), [mes]);
 
-  const { data: fcReal, isLoading } = useFoodCostReal(sucursalId, periodo);
-  const { data: fcTeo } = useFoodCostTeorico(sucursalId, periodo);
-  const { data: labor } = useLaborCost(sucursalId, periodo);
-  const { data: resumen } = useResumenMes(sucursalId, periodo);
+  const { data: actual, isLoading } = useQuery({
+    queryKey: ["reporte_mensual", sucursalId, periodo],
+    enabled: !!sucursalId,
+    queryFn: () => fetchReporteMensual(sucursalId!, periodo),
+  });
 
-  const ventasNetas = fcReal?.ventas_netas ?? 0;
-  const costoVentas = fcReal?.costo_real_ventas ?? 0;
-  const margenBruto = ventasNetas - costoVentas;
-  const gastos = resumen?.gastosTotal ?? 0;
-  const costoLaboral = labor?.costo_laboral ?? 0;
-  const resultadoOperativo = margenBruto - costoLaboral - gastos;
-  const sinVentasCapturadas = ventasNetas === 0;
+  const { data: tendencia } = useQuery({
+    queryKey: ["reporte_tendencia", sucursalId, periodos],
+    enabled: !!sucursalId,
+    queryFn: async () => {
+      const datos = await Promise.all(periodos.map((p) => fetchReporteMensual(sucursalId!, p)));
+      return datos.map((d) => ({
+        mes: nombreMesCorto(d.periodo),
+        ventasNetas: d.ventasNeta,
+        resultadoOperativoPct: d.resultadoOperativoPct ?? 0,
+      }));
+    },
+  });
+
+  const { data: estado } = useQuery({
+    queryKey: ["liquidez_estado", sucursalId, periodo],
+    enabled: !!sucursalId,
+    queryFn: async () => {
+      const fin = new Date(new Date(periodo).getFullYear(), new Date(periodo).getMonth() + 1, 0).toISOString().slice(0, 10);
+      const [cxp, caja] = await Promise.all([
+        supabase.from("v_cxp_saldos").select("saldo, estatus_cxp"),
+        supabase
+          .from("cierres_caja")
+          .select("saldo_fisico, fecha")
+          .lte("fecha", fin)
+          .order("fecha", { ascending: false })
+          .limit(1),
+      ]);
+      const cxpVencida = (cxp.data ?? []).filter((c) => c.estatus_cxp === "VENCIDO").reduce((s, c) => s + Number(c.saldo ?? 0), 0);
+      const cajaDisponible = caja.data?.[0]?.saldo_fisico != null ? Number(caja.data[0].saldo_fisico) : null;
+      return { cxpVencida, cajaDisponible };
+    },
+  });
+
+  const sinVentasCapturadas = !!actual && actual.ventasNeta === 0;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-ink-900">Rentabilidad — {nombreMes(mes)}</h1>
+          <h1 className="font-display text-2xl font-semibold text-ink-900 capitalize">Rentabilidad — {nombreMes(mes)}</h1>
           <p className="text-sm text-ink-500">¿Cuánto vendimos, cuánto costó, cuánto ganamos?</p>
         </div>
-        <label className="flex flex-col text-xs font-medium text-ink-600">
-          Periodo
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
-          />
-        </label>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Periodo
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
+            />
+          </label>
+          <Link
+            to="/direccion/reporte-mensual"
+            className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            Reporte completo <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
       {sinVentasCapturadas && !isLoading && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Este mes no tiene ventas capturadas en el módulo de Ventas (tabla <code>ventas</code>), por lo que
-          Ventas netas, Food Cost y Margen bruto aparecen en $0. Los movimientos bancarios/caja y gastos
-          importados sí están cargados — revísalos en Finanzas → Bancos y en el detalle de Gastos.
+          Este mes no tiene ventas capturadas en el módulo de Ventas (tabla <code>ventas</code>), por lo que Ventas netas, Food
+          Cost y Margen bruto aparecen en $0. Los movimientos bancarios/caja y gastos importados sí están cargados — revísalos
+          en Finanzas → Bancos y en el detalle de Gastos.
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Ventas netas" value={formatCurrency(ventasNetas)} />
-        <StatCard label="Food Cost real" value={formatPercent(fcReal?.food_cost_real_pct)} />
-        <StatCard label="Food Cost teórico" value={formatPercent(fcTeo?.food_cost_teorico_pct)} />
+        <StatCard label="Ventas netas" value={formatCurrency(actual?.ventasNeta)} />
+        <StatCard label="Food Cost real" value={formatPercent(actual?.foodCostPct)} />
+        <StatCard label="Food Cost teórico" value={formatPercent(actual?.foodCostTeoricoPct)} />
         <StatCard
           label="Desviación Food Cost"
           value={
-            fcReal?.food_cost_real_pct != null && fcTeo?.food_cost_teorico_pct != null
-              ? formatPercent(fcReal.food_cost_real_pct - fcTeo.food_cost_teorico_pct)
+            actual?.foodCostPct != null && actual?.foodCostTeoricoPct != null
+              ? formatPercent(actual.foodCostPct - actual.foodCostTeoricoPct)
               : "PENDIENTE"
           }
           tone={
-            fcReal?.food_cost_real_pct != null && fcTeo?.food_cost_teorico_pct != null
-              ? fcReal.food_cost_real_pct - fcTeo.food_cost_teorico_pct > 5
+            actual?.foodCostPct != null && actual?.foodCostTeoricoPct != null
+              ? actual.foodCostPct - actual.foodCostTeoricoPct > 5
                 ? "negativo"
                 : "positivo"
               : "neutral"
           }
         />
-        <StatCard label="Costo laboral" value={formatCurrency(costoLaboral)} hint={formatPercent(labor?.labor_cost_pct)} />
-        <StatCard label="Margen bruto" value={formatCurrency(margenBruto)} />
-        <StatCard label="Gastos del mes" value={formatCurrency(gastos)} />
+        <StatCard label="Costo laboral" value={formatCurrency(actual?.costoLaboralTotal)} hint={formatPercent(actual?.costoLaboralPct)} />
+        <StatCard label="Margen bruto" value={formatCurrency(actual?.margenBruto)} hint={formatPercent(actual?.margenBrutoPct)} />
+        <StatCard label="Gastos fijos + variables" value={formatCurrency((actual?.gastosFijosTotal ?? 0) + (actual?.gastosVariablesTotal ?? 0))} />
         <StatCard
           label="Resultado operativo"
-          value={formatCurrency(resultadoOperativo)}
-          tone={resultadoOperativo >= 0 ? "positivo" : "negativo"}
+          value={formatCurrency(actual?.resultadoOperativo)}
+          hint={formatPercent(actual?.resultadoOperativoPct)}
+          tone={actual?.resultadoOperativo != null ? (actual.resultadoOperativo >= 0 ? "positivo" : "negativo") : "neutral"}
         />
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tendencia — últimos 6 meses</CardTitle>
+        </CardHeader>
+        <CardContent className="h-64">
+          {!tendencia ? (
+            <p className="text-sm text-ink-500">Calculando tendencia…</p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={tendencia} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e4dc" vertical={false} />
+                <XAxis dataKey="mes" tick={{ fontSize: 12, fill: "#6b6f66" }} axisLine={{ stroke: "#d8d5cb" }} tickLine={false} />
+                <YAxis
+                  yAxisId="ventas"
+                  tick={{ fontSize: 12, fill: "#6b6f66" }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                  width={56}
+                />
+                <YAxis yAxisId="pct" orientation="right" tick={{ fontSize: 12, fill: "#6b6f66" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} width={44} />
+                <Tooltip
+                  formatter={(value: number, name) =>
+                    name === "Ventas netas" ? [formatCurrency(value), name] : [formatPercent(value), name]
+                  }
+                  contentStyle={{ borderRadius: 8, border: "1px solid #e7e4dc", fontSize: 12 }}
+                />
+                <Line yAxisId="ventas" type="monotone" dataKey="ventasNetas" name="Ventas netas" stroke="#207a4f" strokeWidth={2} dot={{ r: 3 }} />
+                <Line
+                  yAxisId="pct"
+                  type="monotone"
+                  dataKey="resultadoOperativoPct"
+                  name="Resultado operativo %"
+                  stroke="#b8790c"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
       <div>
         <h2 className="mb-3 text-sm font-semibold text-ink-700">Liquidez</h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard label="Disponibilidad bancaria" value={formatCurrency(resumen?.disponibilidadBancaria)} hint="Saldo actual, no depende del mes elegido" />
-          <StatCard label="Caja disponible" value={formatCurrency(resumen?.cajaDisponible)} />
-          <StatCard label="Cuentas por pagar" value={formatCurrency(resumen?.cxpTotal)} />
-          <StatCard label="CxP vencida" value={formatCurrency(resumen?.cxpVencida)} tone={resumen?.cxpVencida ? "negativo" : "positivo"} />
+          <StatCard label="Disponibilidad bancaria" value={formatCurrency(actual?.saldoBancarioActual)} hint="Saldo actual, no depende del mes elegido" />
+          <StatCard label="Caja disponible" value={formatCurrency(estado?.cajaDisponible)} />
+          <StatCard label="Cuentas por pagar" value={formatCurrency(actual?.cxpPendiente)} />
+          <StatCard label="CxP vencida" value={formatCurrency(estado?.cxpVencida)} tone={estado?.cxpVencida ? "negativo" : "positivo"} />
         </div>
       </div>
     </div>

@@ -5,14 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency } from "@/lib/utils";
+import { Banknote, ShoppingCart, Receipt, Landmark, PackageSearch, FileUp, AlertCircle } from "lucide-react";
 
 const ACCIONES = [
-  { to: "/pao/ventas", label: "Registrar venta", icon: "💵" },
-  { to: "/pao/compras", label: "Registrar compra", icon: "🛒" },
-  { to: "/pao/gastos", label: "Registrar gasto", icon: "🧾" },
-  { to: "/pao/caja", label: "Movimiento de caja", icon: "🏦" },
-  { to: "/pao/inventario", label: "Registrar inventario", icon: "📦" },
-  { to: "/pao/documentos", label: "Subir documento", icon: "📎" },
+  { to: "/pao/ventas", label: "Registrar venta", icon: Banknote },
+  { to: "/pao/compras", label: "Registrar compra", icon: ShoppingCart },
+  { to: "/pao/gastos", label: "Registrar gasto", icon: Receipt },
+  { to: "/pao/caja", label: "Movimiento de caja", icon: Landmark },
+  { to: "/pao/inventario", label: "Registrar inventario", icon: PackageSearch },
+  { to: "/pao/documentos", label: "Subir documento", icon: FileUp },
 ];
 
 export default function Hoy() {
@@ -43,8 +44,8 @@ export default function Hoy() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-ink-900">Hoy</h1>
-        <p className="text-sm text-ink-500">{new Date().toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+        <h1 className="font-display text-2xl font-semibold text-ink-900">Hoy</h1>
+        <p className="text-sm text-ink-500 capitalize">{new Date().toLocaleDateString("es-MX", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -65,9 +66,11 @@ export default function Hoy() {
             <Link
               key={a.to}
               to={a.to}
-              className="flex flex-col items-center justify-center gap-2 rounded-xl border border-ink-200 bg-white p-6 text-center shadow-sm transition hover:border-brand-300 hover:shadow"
+              className="group flex flex-col items-center justify-center gap-3 rounded-xl border border-ink-200 bg-white p-6 text-center shadow-card transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevated"
             >
-              <span className="text-3xl">{a.icon}</span>
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-50 text-brand-700 transition group-hover:bg-brand-100">
+                <a.icon className="h-5 w-5" strokeWidth={1.75} />
+              </span>
               <span className="text-sm font-medium text-ink-800">{a.label}</span>
             </Link>
           ))}
@@ -84,8 +87,11 @@ export default function Hoy() {
           ) : (
             <ul className="space-y-2">
               {data.alertas.map((a: any) => (
-                <li key={a.id} className="text-sm text-ink-700">
-                  <span className="font-medium">{a.severidad === "critical" ? "🔴" : "🟡"}</span> {a.mensaje}
+                <li key={a.id} className="flex items-start gap-2 text-sm text-ink-700">
+                  <AlertCircle
+                    className={`mt-0.5 h-4 w-4 shrink-0 ${a.severidad === "critical" ? "text-semaforo-rojo" : "text-semaforo-amarillo"}`}
+                  />
+                  {a.mensaje}
                 </li>
               ))}
             </ul>
