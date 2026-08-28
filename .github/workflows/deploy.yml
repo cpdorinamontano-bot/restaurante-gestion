@@ -32,6 +32,8 @@ jobs:
           VITE_SUPABASE_URL: https://ognfdvlkvpevxtqqucrj.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_6vPSzK7lxEN4iRD7bMYUTg_wzJfmBeR
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
