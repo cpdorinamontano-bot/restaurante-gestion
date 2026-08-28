@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Bianco Storico</title>
+    <script>
+      // SPA fallback para GitHub Pages: redirige cualquier ruta profunda
+      // de vuelta a index.html conservando la ruta original.
+      var base = "/restaurante-gestion";
+      var path = location.pathname.slice(base.length) || "/";
+      location.replace(base + "/?redirect=" + encodeURIComponent(path + location.search + location.hash));
+    </script>
+  </head>
+  <body></body>
+</html>

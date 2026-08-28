@@ -1,5 +1,6 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
@@ -45,11 +46,22 @@ const NAV_FINANZAS = [
 
 const NAV_ADMIN = [{ to: "/admin", label: "Usuarios y permisos" }];
 
+function RedirectHandler() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect");
+    if (redirect) navigate(redirect, { replace: true });
+  }, [navigate]);
+  return null;
+}
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <RedirectHandler />
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/sin-acceso" element={<SinAcceso />} />
