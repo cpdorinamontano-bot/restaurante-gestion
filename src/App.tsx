@@ -25,6 +25,7 @@ import Bancos from "@/pages/finanzas/Bancos";
 import GastosLista from "@/pages/finanzas/Gastos";
 import ReporteMensual from "@/pages/finanzas/ReporteMensual";
 import ReporteAcumulado from "@/pages/finanzas/ReporteAcumulado";
+import EstadoResultados from "@/pages/finanzas/EstadoResultados";
 import EstadosCuenta from "@/pages/finanzas/EstadosCuenta";
 import Presupuestos from "@/pages/finanzas/Presupuestos";
 import CatalogoReportes from "@/pages/finanzas/CatalogoReportes";
@@ -49,6 +50,7 @@ const NAV_DIRECCION = [
   { to: "/direccion/catalogo", label: "Catálogo de reportes" },
   { to: "/direccion/reporte-mensual", label: "Reporte mensual" },
   { to: "/direccion/acumulado", label: "Mes a mes y acumulado" },
+  { to: "/direccion/estado-resultados", label: "Estado de Resultados" },
 ];
 
 const NAV_FINANZAS = [
@@ -56,6 +58,7 @@ const NAV_FINANZAS = [
   { to: "/finanzas/catalogo", label: "Catálogo de reportes" },
   { to: "/finanzas/reporte-mensual", label: "Reporte mensual" },
   { to: "/finanzas/acumulado", label: "Mes a mes y acumulado" },
+  { to: "/finanzas/estado-resultados", label: "Estado de Resultados" },
   { to: "/finanzas/bancos", label: "Bancos" },
   { to: "/finanzas/estados-cuenta", label: "Estados de cuenta" },
   { to: "/finanzas/presupuestos", label: "Presupuestos" },
@@ -115,6 +118,7 @@ export default function App() {
               <Route path="catalogo" element={<CatalogoReportes />} />
               <Route path="reporte-mensual" element={<ReporteMensual />} />
               <Route path="acumulado" element={<ReporteAcumulado />} />
+              <Route path="estado-resultados" element={<EstadoResultados />} />
             </Route>
 
             <Route
@@ -129,6 +133,7 @@ export default function App() {
               <Route path="catalogo" element={<CatalogoReportes />} />
               <Route path="reporte-mensual" element={<ReporteMensual />} />
               <Route path="acumulado" element={<ReporteAcumulado />} />
+              <Route path="estado-resultados" element={<EstadoResultados />} />
               <Route path="bancos" element={<Bancos />} />
               <Route path="estados-cuenta" element={<EstadosCuenta />} />
               <Route path="presupuestos" element={<Presupuestos />} />

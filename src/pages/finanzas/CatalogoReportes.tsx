@@ -47,6 +47,18 @@ const REPORTES: Reporte[] = [
     ],
   },
   {
+    to: "/finanzas/estado-resultados",
+    titulo: "Estado de Resultados",
+    resumen: "El P&L en 12 columnas (Ene–Dic) más Total, separando la utilidad del negocio de los dividendos y retiros de socios.",
+    contiene: [
+      { nombre: "Costo de Ventas: Compras + Mano de obra", cubierto: true },
+      { nombre: "Gastos Generales por concepto (Propinas, Comisiones, Fijos, Mantenimiento, Impuestos, Otros)", cubierto: true },
+      { nombre: "Utilidad financiera $ y % (antes de retiros de socios)", cubierto: true },
+      { nombre: "Dividendos y retiros de socios separados de la operación", cubierto: true },
+      { nombre: "Utilidad neta $ y % (después de retiros de socios)", cubierto: true },
+    ],
+  },
+  {
     to: "/direccion",
     titulo: "Rentabilidad (Dirección)",
     resumen: "Vista rápida para la dueña: ¿cuánto vendimos, cuánto costó, cuánto ganamos?",
