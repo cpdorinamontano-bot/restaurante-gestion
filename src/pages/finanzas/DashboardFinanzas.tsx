@@ -15,8 +15,18 @@ export default function DashboardFinanzas() {
     enabled: !!sucursalId,
     queryFn: async () => {
       const [ventasPendCount, ventasPend, cxpVencida, alertas, cierreMensual] = await Promise.all([
-        supabase.from("v_ventas_conciliacion").select("*", { count: "exact", head: true }).neq("estatus_calculado", "CUADRADO"),
-        supabase.from("v_ventas_conciliacion").select("*").neq("estatus_calculado", "CUADRADO").order("fecha", { ascending: false }).limit(10),
+        supabase
+          .from("v_ventas_conciliacion")
+          .select("*", { count: "exact", head: true })
+          .neq("estatus_calculado", "CUADRADO")
+          .not("origen", "like", "importado_%"),
+        supabase
+          .from("v_ventas_conciliacion")
+          .select("*")
+          .neq("estatus_calculado", "CUADRADO")
+          .not("origen", "like", "importado_%")
+          .order("fecha", { ascending: false })
+          .limit(10),
         supabase.from("v_cxp_antiguedad").select("*").order("dias_vencidos", { ascending: false }).limit(10),
         supabase.from("alertas").select("*").eq("estatus", "abierta").order("created_at", { ascending: false }).limit(10),
         supabase
