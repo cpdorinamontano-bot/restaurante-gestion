@@ -30,7 +30,7 @@ function ultimosPeriodos(mesActual: string, n: number) {
 
 export default function DashboardDireccion() {
   const { sucursalId } = useAuth();
-  const [mes, setMes] = useState("2026-03");
+  const [mes, setMes] = useState("2026-08");
   const periodo = `${mes}-01`;
   const periodos = useMemo(() => ultimosPeriodos(mes, 6), [mes]);
 
@@ -117,22 +117,14 @@ export default function DashboardDireccion() {
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard label="Ventas netas" value={formatCurrency(actual?.ventasNeta)} />
         <StatCard label="Food Cost real" value={formatPercent(actual?.foodCostPct)} />
-        <StatCard label="Food Cost teórico" value={formatPercent(actual?.foodCostTeoricoPct)} />
-        <StatCard
-          label="Desviación Food Cost"
-          value={
-            actual?.foodCostPct != null && actual?.foodCostTeoricoPct != null
-              ? formatPercent(actual.foodCostPct - actual.foodCostTeoricoPct)
-              : "PENDIENTE"
-          }
-          tone={
-            actual?.foodCostPct != null && actual?.foodCostTeoricoPct != null
-              ? actual.foodCostPct - actual.foodCostTeoricoPct > 5
-                ? "negativo"
-                : "positivo"
-              : "neutral"
-          }
-        />
+        {actual?.foodCostTeoricoPct != null && <StatCard label="Food Cost teórico" value={formatPercent(actual.foodCostTeoricoPct)} />}
+        {actual?.foodCostPct != null && actual?.foodCostTeoricoPct != null && (
+          <StatCard
+            label="Desviación Food Cost"
+            value={formatPercent(actual.foodCostPct - actual.foodCostTeoricoPct)}
+            tone={actual.foodCostPct - actual.foodCostTeoricoPct > 5 ? "negativo" : "positivo"}
+          />
+        )}
         <StatCard label="Costo laboral" value={formatCurrency(actual?.costoLaboralTotal)} hint={formatPercent(actual?.costoLaboralPct)} />
         <StatCard label="Margen bruto" value={formatCurrency(actual?.margenBruto)} hint={formatPercent(actual?.margenBrutoPct)} />
         <StatCard label="Gastos fijos + variables" value={formatCurrency((actual?.gastosFijosTotal ?? 0) + (actual?.gastosVariablesTotal ?? 0))} />
