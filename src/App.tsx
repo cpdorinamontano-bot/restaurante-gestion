@@ -24,6 +24,7 @@ import ResumenSocios from "@/pages/socios/ResumenSocios";
 import DashboardFinanzas from "@/pages/finanzas/DashboardFinanzas";
 import CierreMensual from "@/pages/finanzas/CierreMensual";
 import Bancos from "@/pages/finanzas/Bancos";
+import Caja from "@/pages/finanzas/Caja";
 import GastosLista from "@/pages/finanzas/Gastos";
 import ReporteMensual from "@/pages/finanzas/ReporteMensual";
 import ReporteAcumulado from "@/pages/finanzas/ReporteAcumulado";
@@ -64,6 +65,7 @@ const NAV_FINANZAS = [
   { to: "/finanzas/acumulado", label: "Mes a mes y acumulado" },
   { to: "/finanzas/estado-resultados", label: "Estado de Resultados" },
   { to: "/finanzas/bancos", label: "Bancos" },
+  { to: "/finanzas/caja", label: "Caja" },
   { to: "/finanzas/estados-cuenta", label: "Estados de cuenta" },
   { to: "/finanzas/presupuestos", label: "Presupuestos" },
   { to: "/finanzas/gastos", label: "Gastos" },
@@ -141,6 +143,7 @@ export default function App() {
               <Route path="acumulado" element={<ReporteAcumulado />} />
               <Route path="estado-resultados" element={<EstadoResultados />} />
               <Route path="bancos" element={<Bancos />} />
+              <Route path="caja" element={<Caja />} />
               <Route path="estados-cuenta" element={<EstadosCuenta />} />
               <Route path="presupuestos" element={<Presupuestos />} />
               <Route path="gastos" element={<GastosLista />} />

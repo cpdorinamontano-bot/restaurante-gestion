@@ -96,6 +96,15 @@ const REPORTES: Reporte[] = [
     ],
   },
   {
+    to: "/finanzas/caja",
+    titulo: "Caja",
+    resumen: "Detalle línea por línea de cada movimiento de efectivo en caja, filtrable por mes.",
+    contiene: [
+      { nombre: "Movimientos individuales (entradas y salidas)", cubierto: true },
+      { nombre: "Entradas, salidas y neto del mes", cubierto: true },
+    ],
+  },
+  {
     to: "/finanzas/gastos",
     titulo: "Gastos",
     resumen: "Detalle línea por línea de cada gasto capturado, filtrable por mes, con top categorías.",

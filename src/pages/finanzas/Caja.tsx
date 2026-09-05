@@ -5,25 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-export default function Bancos() {
+const TIPOS_INGRESO = ["venta_efectivo", "entrada", "deposito", "reposicion"];
+
+export default function Caja() {
   const [mes, setMes] = useState("2026-08");
   const inicio = `${mes}-01`;
   const fin = new Date(new Date(inicio).getFullYear(), new Date(inicio).getMonth() + 1, 0).toISOString().slice(0, 10);
 
-  const { data: cuentas } = useQuery({
-    queryKey: ["cuentas_bancarias_lista"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("cuentas_bancarias").select("*").eq("estatus", "activo");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
   const { data: movimientos, isLoading } = useQuery({
-    queryKey: ["movimientos_bancarios", mes],
+    queryKey: ["movimientos_caja", mes],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("movimientos_bancarios")
+        .from("movimientos_caja")
         .select("*")
         .gte("fecha", inicio)
         .lte("fecha", fin)
@@ -34,13 +27,20 @@ export default function Bancos() {
     },
   });
 
-  const totalCargo = (movimientos ?? []).reduce((s, m) => s + Number(m.cargo ?? 0), 0);
-  const totalAbono = (movimientos ?? []).reduce((s, m) => s + Number(m.abono ?? 0), 0);
+  const totalIngresos = (movimientos ?? [])
+    .filter((m) => TIPOS_INGRESO.includes(m.tipo_movimiento))
+    .reduce((s, m) => s + Number(m.importe ?? 0), 0);
+  const totalEgresos = (movimientos ?? [])
+    .filter((m) => !TIPOS_INGRESO.includes(m.tipo_movimiento))
+    .reduce((s, m) => s + Number(m.importe ?? 0), 0);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="text-xl font-semibold text-ink-900">Bancos</h1>
+        <div>
+          <h1 className="text-xl font-semibold text-ink-900">Caja</h1>
+          <p className="text-sm text-ink-500">Efectivo en caja — entradas y salidas capturadas.</p>
+        </div>
         <label className="flex flex-col text-xs font-medium text-ink-600">
           Mes
           <input
@@ -53,15 +53,15 @@ export default function Bancos() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard label="Saldo actual de la cuenta" value={formatCurrency(cuentas?.[0]?.saldo_actual)} hint="No depende del mes elegido" />
-        <StatCard label="Ingresos del mes (abonos)" value={formatCurrency(totalAbono)} tone="positivo" />
-        <StatCard label="Egresos del mes (cargos)" value={formatCurrency(totalCargo)} tone="negativo" />
+        <StatCard label="Entradas del mes" value={formatCurrency(totalIngresos)} tone="positivo" />
+        <StatCard label="Salidas del mes" value={formatCurrency(totalEgresos)} tone="negativo" />
+        <StatCard label="Neto del mes" value={formatCurrency(totalIngresos - totalEgresos)} tone={totalIngresos - totalEgresos >= 0 ? "positivo" : "negativo"} />
         <StatCard label="Movimientos en el mes" value={String(movimientos?.length ?? 0)} />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Movimientos ({cuentas?.[0]?.alias ?? cuentas?.[0]?.banco ?? "cuenta"})</CardTitle>
+          <CardTitle>Movimientos de caja</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -75,21 +75,24 @@ export default function Bancos() {
                   <tr>
                     <th className="pb-2">Fecha</th>
                     <th className="pb-2">Concepto</th>
-                    <th className="pb-2">Categoría</th>
-                    <th className="pb-2 text-right">Cargo</th>
-                    <th className="pb-2 text-right">Abono</th>
+                    <th className="pb-2">Tipo</th>
+                    <th className="pb-2 text-right">Salida</th>
+                    <th className="pb-2 text-right">Entrada</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {movimientos.map((m: any) => (
-                    <tr key={m.id} className="border-t border-ink-100">
-                      <td className="py-1.5">{formatDate(m.fecha)}</td>
-                      <td className="py-1.5">{m.concepto}</td>
-                      <td className="py-1.5 text-ink-500">{m.tipo_movimiento}</td>
-                      <td className="py-1.5 text-right text-rose-700">{Number(m.cargo) > 0 ? formatCurrency(m.cargo) : ""}</td>
-                      <td className="py-1.5 text-right text-emerald-700">{Number(m.abono) > 0 ? formatCurrency(m.abono) : ""}</td>
-                    </tr>
-                  ))}
+                  {movimientos.map((m: any) => {
+                    const esIngreso = TIPOS_INGRESO.includes(m.tipo_movimiento);
+                    return (
+                      <tr key={m.id} className="border-t border-ink-100">
+                        <td className="py-1.5">{formatDate(m.fecha)}</td>
+                        <td className="py-1.5">{m.notas}</td>
+                        <td className="py-1.5 text-ink-500">{m.tipo_movimiento}</td>
+                        <td className="py-1.5 text-right text-rose-700">{!esIngreso ? formatCurrency(m.importe) : ""}</td>
+                        <td className="py-1.5 text-right text-emerald-700">{esIngreso ? formatCurrency(m.importe) : ""}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
