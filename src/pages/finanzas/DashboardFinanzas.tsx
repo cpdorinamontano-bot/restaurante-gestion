@@ -14,7 +14,8 @@ export default function DashboardFinanzas() {
     queryKey: ["finanzas_resumen", sucursalId],
     enabled: !!sucursalId,
     queryFn: async () => {
-      const [ventasPend, cxpVencida, alertas, cierreMensual] = await Promise.all([
+      const [ventasPendCount, ventasPend, cxpVencida, alertas, cierreMensual] = await Promise.all([
+        supabase.from("v_ventas_conciliacion").select("*", { count: "exact", head: true }).neq("estatus_calculado", "CUADRADO"),
         supabase.from("v_ventas_conciliacion").select("*").neq("estatus_calculado", "CUADRADO").order("fecha", { ascending: false }).limit(10),
         supabase.from("v_cxp_antiguedad").select("*").order("dias_vencidos", { ascending: false }).limit(10),
         supabase.from("alertas").select("*").eq("estatus", "abierta").order("created_at", { ascending: false }).limit(10),
@@ -27,6 +28,7 @@ export default function DashboardFinanzas() {
           .maybeSingle(),
       ]);
       return {
+        ventasPendientesTotal: ventasPendCount.count ?? 0,
         ventasPendientes: ventasPend.data ?? [],
         cxp: cxpVencida.data ?? [],
         alertas: alertas.data ?? [],
@@ -52,7 +54,7 @@ export default function DashboardFinanzas() {
           label="Cierre del mes actual"
           value={data?.cierreMensual?.estatus ?? "SIN INICIAR"}
         />
-        <StatCard label="Ventas por conciliar" value={String(data?.ventasPendientes.length ?? 0)} tone={data?.ventasPendientes.length ? "negativo" : "positivo"} />
+        <StatCard label="Ventas por conciliar" value={String(data?.ventasPendientesTotal ?? 0)} tone={data?.ventasPendientesTotal ? "negativo" : "positivo"} />
         <StatCard label="Alertas abiertas" value={String(data?.alertas.length ?? 0)} tone={data?.alertas.length ? "negativo" : "positivo"} />
         <StatCard label="CxP con antigüedad" value={String(data?.cxp.filter((c: any) => c.rango_antiguedad !== "PAGADO").length ?? 0)} />
       </div>
@@ -65,6 +67,12 @@ export default function DashboardFinanzas() {
           {!data?.ventasPendientes.length ? (
             <p className="text-sm text-ink-500">No hay diferencias pendientes.</p>
           ) : (
+            <>
+            {data.ventasPendientesTotal > data.ventasPendientes.length && (
+              <p className="mb-2 text-xs text-ink-500">
+                Mostrando las {data.ventasPendientes.length} más recientes de {data.ventasPendientesTotal} en total.
+              </p>
+            )}
             <table className="w-full text-sm">
               <thead className="text-left text-xs uppercase text-ink-500">
                 <tr>
@@ -89,6 +97,7 @@ export default function DashboardFinanzas() {
                 ))}
               </tbody>
             </table>
+            </>
           )}
         </CardContent>
       </Card>
