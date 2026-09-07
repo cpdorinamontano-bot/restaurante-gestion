@@ -6,7 +6,7 @@ import { exportReporteMensualExcel, exportReporteMensualPDF } from "@/lib/report
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import { FileDown, FileSpreadsheet, TrendingDown, TrendingUp, Minus, AlertTriangle } from "lucide-react";
+import { FileDown, FileSpreadsheet, TrendingDown, TrendingUp, Minus, AlertTriangle, ThumbsUp, ThumbsDown, Lightbulb } from "lucide-react";
 
 function periodoActualISO() {
   const d = new Date();
@@ -96,6 +96,108 @@ function calcularPuntoEquilibrio(r: ReporteMensualData) {
   };
 }
 
+interface AnalisisGerencial {
+  estado: string;
+  tono: "positivo" | "neutral" | "negativo";
+  fortalezas: string[];
+  debilidades: string[];
+  recomendaciones: string[];
+}
+
+/**
+ * Lectura automática del mes a partir de las mismas cifras del reporte — no reemplaza el
+ * criterio de quien lee el reporte, es un punto de partida basado en rangos saludables
+ * típicos de restaurante (food cost 28-32%, costo laboral 25-30%).
+ */
+function generarAnalisisGerencial(
+  actual: ReporteMensualData,
+  anterior: ReporteMensualData | null,
+  equilibrio: ReturnType<typeof calcularPuntoEquilibrio>
+): AnalisisGerencial | null {
+  if (actual.ventasFuente === "sin_datos") return null;
+
+  const fortalezas: string[] = [];
+  const debilidades: string[] = [];
+  const recomendaciones: string[] = [];
+
+  if (actual.resultadoOperativoPct !== null) {
+    if (actual.resultadoOperativoPct >= 15) {
+      fortalezas.push(`Margen operativo sólido: ${formatPercent(actual.resultadoOperativoPct)} de las ventas.`);
+    } else if (actual.resultadoOperativoPct < 5) {
+      debilidades.push(`Margen operativo muy ajustado: ${formatPercent(actual.resultadoOperativoPct)} de las ventas.`);
+      recomendaciones.push("Revisar la estructura de costos fijos y variables para ampliar el margen operativo.");
+    }
+    if (anterior?.resultadoOperativoPct != null) {
+      const delta = actual.resultadoOperativoPct - anterior.resultadoOperativoPct;
+      if (delta >= 2) {
+        fortalezas.push(`El margen operativo mejoró ${delta.toFixed(1)} pts contra el mes anterior.`);
+      } else if (delta <= -2) {
+        debilidades.push(`El margen operativo bajó ${Math.abs(delta).toFixed(1)} pts contra el mes anterior.`);
+        recomendaciones.push("Investigar qué categoría de gasto o de costo de ventas subió respecto al mes anterior.");
+      }
+    }
+  }
+
+  if (actual.foodCostPct !== null) {
+    if (actual.foodCostPct <= 30) {
+      fortalezas.push(`Food cost controlado: ${formatPercent(actual.foodCostPct)} de las ventas.`);
+    } else if (actual.foodCostPct > 35) {
+      debilidades.push(`Food cost elevado: ${formatPercent(actual.foodCostPct)} de las ventas (rango saludable: 28%-32%).`);
+      recomendaciones.push("Revisar precios de compra a proveedores y mermas; capturar recetas para medir food cost teórico.");
+    }
+  }
+
+  if (actual.costoLaboralPct !== null) {
+    if (actual.costoLaboralPct <= 28) {
+      fortalezas.push(`Costo laboral eficiente: ${formatPercent(actual.costoLaboralPct)} de las ventas.`);
+    } else if (actual.costoLaboralPct > 33) {
+      debilidades.push(`Costo laboral elevado: ${formatPercent(actual.costoLaboralPct)} de las ventas (rango saludable: 25%-30%).`);
+      recomendaciones.push("Revisar horarios y turnos contra el nivel de ventas por día para ajustar la plantilla.");
+    }
+  }
+
+  if (equilibrio?.alcanzable) {
+    if (equilibrio.diferencia >= 0) {
+      fortalezas.push(`Las ventas del mes superaron el punto de equilibrio en ${formatCurrency(equilibrio.diferencia)}.`);
+    } else {
+      debilidades.push(`Las ventas del mes quedaron ${formatCurrency(Math.abs(equilibrio.diferencia))} por debajo del punto de equilibrio.`);
+      recomendaciones.push("Priorizar acciones que aumenten ventas o reduzcan costos fijos hasta superar el punto de equilibrio.");
+    }
+  }
+
+  if (actual.ventasNeta > 0 && actual.cxpPendiente > 0) {
+    const cxpPct = (actual.cxpPendiente / actual.ventasNeta) * 100;
+    if (cxpPct > 20) {
+      debilidades.push(`Cuentas por pagar pendientes equivalen a ${formatPercent(cxpPct)} de las ventas del mes.`);
+      recomendaciones.push("Dar seguimiento al calendario de pagos a proveedores para evitar recargos o cortes de suministro.");
+    }
+  }
+
+  const estado =
+    actual.resultadoOperativo === null
+      ? "Sin datos suficientes para evaluar el estado operativo del mes."
+      : actual.resultadoOperativo >= 0
+      ? `El negocio es rentable en operación este mes, con un margen operativo de ${formatPercent(actual.resultadoOperativoPct)}.`
+      : "El negocio tuvo pérdida operativa este mes: los costos superaron a las ventas antes de impuestos y retiros.";
+
+  const tono: AnalisisGerencial["tono"] =
+    actual.resultadoOperativo === null || actual.resultadoOperativo < 0
+      ? "negativo"
+      : debilidades.length > fortalezas.length
+      ? "neutral"
+      : "positivo";
+
+  return {
+    estado,
+    tono,
+    fortalezas: fortalezas.length ? fortalezas : ["No se identificaron fortalezas destacables este mes con los datos disponibles."],
+    debilidades: debilidades.length ? debilidades : ["No se identificaron debilidades relevantes este mes con los datos disponibles."],
+    recomendaciones: recomendaciones.length
+      ? recomendaciones
+      : ["Mantener el monitoreo mensual de márgenes y costos; no se identifican acciones urgentes."],
+  };
+}
+
 function Desglose({ items, total }: { items: { nombre: string; monto: number }[]; total: number }) {
   if (!items.length) return <p className="text-sm text-ink-500">Sin registros en este periodo.</p>;
   return (
@@ -133,6 +235,7 @@ export default function ReporteMensual() {
 
   const mesLabel = new Date(`${periodo}T00:00:00`).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
   const equilibrio = actual ? calcularPuntoEquilibrio(actual) : null;
+  const analisis = actual ? generarAnalisisGerencial(actual, anterior ?? null, equilibrio) : null;
 
   return (
     <div className="space-y-6">
@@ -184,6 +287,61 @@ export default function ReporteMensual() {
                 automáticamente ese detalle en su lugar.
               </span>
             </div>
+          )}
+
+          {analisis && (
+            <Card
+              className={
+                analisis.tono === "positivo"
+                  ? "border-brand-200 bg-brand-50/60"
+                  : analisis.tono === "negativo"
+                  ? "border-rose-200 bg-rose-50/50"
+                  : "border-amber-200 bg-amber-50/50"
+              }
+            >
+              <CardHeader>
+                <CardTitle className="text-base">Análisis y recomendaciones del mes</CardTitle>
+                <p className="text-sm text-ink-700">{analisis.estado}</p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6 md:grid-cols-3">
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                      <ThumbsUp className="h-3.5 w-3.5" /> Fortalezas
+                    </p>
+                    <ul className="mt-2 space-y-1.5 text-sm text-ink-700">
+                      {analisis.fortalezas.map((f, i) => (
+                        <li key={i}>• {f}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-rose-800">
+                      <ThumbsDown className="h-3.5 w-3.5" /> Debilidades
+                    </p>
+                    <ul className="mt-2 space-y-1.5 text-sm text-ink-700">
+                      {analisis.debilidades.map((d, i) => (
+                        <li key={i}>• {d}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-800">
+                      <Lightbulb className="h-3.5 w-3.5" /> Recomendaciones
+                    </p>
+                    <ul className="mt-2 space-y-1.5 text-sm text-ink-700">
+                      {analisis.recomendaciones.map((r, i) => (
+                        <li key={i}>• {r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-ink-500">
+                  Lectura automática a partir de las cifras de este reporte, contra rangos saludables típicos de restaurante. No
+                  sustituye el criterio de quien decide — es un punto de partida para la conversación mensual.
+                </p>
+              </CardContent>
+            </Card>
           )}
 
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
