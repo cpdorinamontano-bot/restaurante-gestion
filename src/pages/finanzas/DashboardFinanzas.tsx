@@ -14,7 +14,7 @@ export default function DashboardFinanzas() {
     queryKey: ["finanzas_resumen", sucursalId],
     enabled: !!sucursalId,
     queryFn: async () => {
-      const [ventasPendCount, ventasPend, cxpVencida, alertas, cierreMensual] = await Promise.all([
+      const [ventasPendCount, ventasPend, cxpVencida, alertas, cierreMensual, gastosSinCategoria, gastosOtros] = await Promise.all([
         supabase
           .from("v_ventas_conciliacion")
           .select("*", { count: "exact", head: true })
@@ -36,13 +36,27 @@ export default function DashboardFinanzas() {
           .order("periodo", { ascending: false })
           .limit(1)
           .maybeSingle(),
+        supabase
+          .from("gastos")
+          .select("*", { count: "exact", head: true })
+          .eq("estatus", "activo")
+          .is("categoria_gasto_id", null),
+        supabase
+          .from("gastos")
+          .select("subtotal, impuestos, categorias_gastos!inner(nombre)")
+          .eq("estatus", "activo")
+          .eq("categorias_gastos.nombre", "Otros"),
       ]);
+      const gastosOtrosFilas = gastosOtros.data ?? [];
       return {
         ventasPendientesTotal: ventasPendCount.count ?? 0,
         ventasPendientes: ventasPend.data ?? [],
         cxp: cxpVencida.data ?? [],
         alertas: alertas.data ?? [],
         cierreMensual: cierreMensual.data,
+        gastosSinCategoriaCount: gastosSinCategoria.count ?? 0,
+        gastosOtrosCount: gastosOtrosFilas.length,
+        gastosOtrosMonto: gastosOtrosFilas.reduce((s, g: any) => s + Number(g.subtotal ?? 0) + Number(g.impuestos ?? 0), 0),
       };
     },
   });
@@ -165,6 +179,37 @@ export default function DashboardFinanzas() {
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Calidad de datos y limitaciones del modelo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex items-center justify-between rounded-lg border border-ink-200 px-4 py-3">
+              <span className="text-sm text-ink-600">Gastos sin categorizar</span>
+              <Badge tone={data?.gastosSinCategoriaCount ? "rojo" : "verde"}>{data?.gastosSinCategoriaCount ?? 0}</Badge>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-ink-200 px-4 py-3">
+              <span className="text-sm text-ink-600">Gastos en "Otros" (pendientes de precisar)</span>
+              <span className="text-sm font-medium text-ink-800">
+                {data?.gastosOtrosCount ?? 0} · {formatCurrency(data?.gastosOtrosMonto ?? 0)}
+              </span>
+            </div>
+          </div>
+          <ul className="mt-4 list-disc space-y-1.5 pl-5 text-sm text-ink-600">
+            <li>
+              La utilidad operativa se calcula sobre compras registradas, no sobre consumo real de inventario: el food cost
+              teórico solo está disponible una vez que se capturen recetas e inventario (a partir de septiembre 2026).
+            </li>
+            <li>
+              Enero a julio 2026 son datos históricos importados en bloque: el detalle de forma de pago por venta no se
+              capturó a ese nivel y no se concilia venta por venta. Agosto 2026 sí cuenta con ese detalle.
+            </li>
+            <li>La conciliación venta por venta y el cierre de caja formal aplican a la captura en vivo, desde septiembre 2026.</li>
+          </ul>
         </CardContent>
       </Card>
     </div>
