@@ -72,6 +72,30 @@ function Renglon({ label, monto, pct, negativo = false, resaltado = false }: { l
   );
 }
 
+/**
+ * Trata costo de ventas + gastos variables como costo variable, y nómina + gastos fijos
+ * como costo fijo del mes — el criterio estándar para punto de equilibrio en un restaurante
+ * con planilla comprometida mes a mes.
+ */
+function calcularPuntoEquilibrio(r: ReporteMensualData) {
+  if (r.ventasFuente === "sin_datos" || r.cmvFuente === "sin_datos" || r.ventasNeta <= 0) return null;
+  const costosVariables = r.cmv + r.gastosVariablesTotal;
+  const costosFijos = r.costoLaboralTotal + r.gastosFijosTotal;
+  const margenContribucionPct = (r.ventasNeta - costosVariables) / r.ventasNeta;
+  if (margenContribucionPct <= 0) {
+    return { alcanzable: false as const, costosFijos, margenContribucionPct };
+  }
+  const ventasEquilibrio = costosFijos / margenContribucionPct;
+  return {
+    alcanzable: true as const,
+    costosFijos,
+    margenContribucionPct,
+    ventasEquilibrio,
+    diferencia: r.ventasNeta - ventasEquilibrio,
+    avancePct: (r.ventasNeta / ventasEquilibrio) * 100,
+  };
+}
+
 function Desglose({ items, total }: { items: { nombre: string; monto: number }[]; total: number }) {
   if (!items.length) return <p className="text-sm text-ink-500">Sin registros en este periodo.</p>;
   return (
@@ -108,6 +132,7 @@ export default function ReporteMensual() {
   });
 
   const mesLabel = new Date(`${periodo}T00:00:00`).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+  const equilibrio = actual ? calcularPuntoEquilibrio(actual) : null;
 
   return (
     <div className="space-y-6">
@@ -196,6 +221,53 @@ export default function ReporteMensual() {
               <Renglon label="Resultado operativo" monto={actual.resultadoOperativo} pct={actual.resultadoOperativoPct} resaltado />
               <Renglon label="(–) Impuestos y otros conceptos" monto={actual.impuestosGasto} negativo />
               <Renglon label="Ganancia / pérdida neta" monto={actual.gananciaNeta} pct={actual.gananciaNetaPct} resaltado />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Punto de equilibrio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!equilibrio ? (
+                <p className="py-2 text-sm text-ink-400">PENDIENTE — falta ventas o costo de ventas capturado este periodo para calcularlo.</p>
+              ) : !equilibrio.alcanzable ? (
+                <p className="text-sm text-rose-700">
+                  Con la estructura de costos actual, el costo variable consume el {formatPercent(equilibrio.margenContribucionPct * 100)} de
+                  cada venta o más — ningún nivel de ventas cubre los costos fijos ({formatCurrency(equilibrio.costosFijos)}) sin antes bajar el
+                  costo variable.
+                </p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                    <div>
+                      <p className="text-sm font-medium text-ink-500">Ventas necesarias para no perder</p>
+                      <p className="mt-1 font-display text-3xl font-semibold tabular text-ink-900">{formatCurrency(equilibrio.ventasEquilibrio)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-ink-500">Ventas reales del mes</p>
+                      <p className="mt-1 text-xl font-semibold tabular text-ink-900">{formatCurrency(actual!.ventasNeta)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-ink-500">
+                        {equilibrio.diferencia >= 0 ? "Ventas por arriba del equilibrio" : "Faltan ventas para el equilibrio"}
+                      </p>
+                      <p className={`mt-1 text-xl font-semibold tabular ${equilibrio.diferencia >= 0 ? "text-brand-700" : "text-rose-700"}`}>
+                        {formatCurrency(Math.abs(equilibrio.diferencia))}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-sm text-ink-600">
+                    {equilibrio.diferencia >= 0
+                      ? `Ya se superó el punto de equilibrio: se vendió ${formatPercent(equilibrio.avancePct)} de lo necesario para cubrir costos fijos y variables del mes.`
+                      : `Se alcanzó ${formatPercent(equilibrio.avancePct)} de las ventas necesarias para cubrir costos fijos y variables del mes.`}
+                  </p>
+                  <p className="mt-2 text-xs text-ink-500">
+                    Margen de contribución: {formatPercent(equilibrio.margenContribucionPct * 100)} · Costos fijos del mes (nómina + gastos
+                    fijos): {formatCurrency(equilibrio.costosFijos)}. Trata costo de ventas y gastos variables como costo variable.
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
 
