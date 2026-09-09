@@ -183,7 +183,7 @@ export default function DashboardDireccion() {
         <h2 className="mb-3 text-sm font-semibold text-ink-700">Liquidez</h2>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard label="Disponibilidad bancaria" value={formatCurrency(actual?.saldoBancarioActual)} hint="Saldo actual, no depende del mes elegido" />
-          <StatCard label="Caja disponible" value={formatCurrency(estado?.cajaDisponible)} />
+          {estado?.cajaDisponible != null && <StatCard label="Caja disponible" value={formatCurrency(estado.cajaDisponible)} />}
           <StatCard label="Cuentas por pagar" value={formatCurrency(actual?.cxpPendiente)} />
           <StatCard label="CxP vencida" value={formatCurrency(estado?.cxpVencida)} tone={estado?.cxpVencida ? "negativo" : "positivo"} />
         </div>
