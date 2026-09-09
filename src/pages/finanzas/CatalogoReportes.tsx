@@ -98,6 +98,29 @@ const CATEGORIAS: Categoria[] = [
       },
     ],
   },
+  {
+    nombre: "Costo real e impuestos",
+    reportes: [
+      {
+        ruta: "inventario-mensual",
+        titulo: "Inventario mensual",
+        resumen: "Costo de insumos realmente consumido: inicial + compras − final.",
+        disponibleEn: ["finanzas"],
+      },
+      {
+        ruta: "activos",
+        titulo: "Activos y depreciación",
+        resumen: "Equipo y mobiliario con su depreciación mensual en línea recta.",
+        disponibleEn: ["finanzas"],
+      },
+      {
+        ruta: "impuestos",
+        titulo: "Impuestos",
+        resumen: "Lo causado del periodo frente a lo ya pagado.",
+        disponibleEn: ["finanzas"],
+      },
+    ],
+  },
 ];
 
 export default function CatalogoReportes() {

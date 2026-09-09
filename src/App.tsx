@@ -31,6 +31,9 @@ import ReporteAcumulado from "@/pages/finanzas/ReporteAcumulado";
 import EstadoResultados from "@/pages/finanzas/EstadoResultados";
 import EstadosCuenta from "@/pages/finanzas/EstadosCuenta";
 import Presupuestos from "@/pages/finanzas/Presupuestos";
+import InventarioMensual from "@/pages/finanzas/InventarioMensual";
+import ActivosDepreciacion from "@/pages/finanzas/ActivosDepreciacion";
+import Impuestos from "@/pages/finanzas/Impuestos";
 import CatalogoReportes from "@/pages/finanzas/CatalogoReportes";
 
 import Usuarios from "@/pages/admin/Usuarios";
@@ -69,6 +72,9 @@ const NAV_FINANZAS = [
   { to: "/finanzas/estados-cuenta", label: "Estados de cuenta" },
   { to: "/finanzas/presupuestos", label: "Presupuestos" },
   { to: "/finanzas/gastos", label: "Gastos" },
+  { to: "/finanzas/inventario-mensual", label: "Inventario mensual" },
+  { to: "/finanzas/activos", label: "Activos y depreciación" },
+  { to: "/finanzas/impuestos", label: "Impuestos" },
   { to: "/finanzas/cierre-mensual", label: "Cierre mensual" },
 ];
 
@@ -147,6 +153,9 @@ export default function App() {
               <Route path="estados-cuenta" element={<EstadosCuenta />} />
               <Route path="presupuestos" element={<Presupuestos />} />
               <Route path="gastos" element={<GastosLista />} />
+              <Route path="inventario-mensual" element={<InventarioMensual />} />
+              <Route path="activos" element={<ActivosDepreciacion />} />
+              <Route path="impuestos" element={<Impuestos />} />
               <Route path="cierre-mensual" element={<CierreMensual />} />
             </Route>
 
