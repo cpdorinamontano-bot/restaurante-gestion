@@ -56,6 +56,12 @@ const CATEGORIAS: Categoria[] = [
         resumen: "Lo real contra el objetivo del mes, por concepto.",
         disponibleEn: ["finanzas"],
       },
+      {
+        ruta: "cuentas",
+        titulo: "Cuentas por cobrar y pagar",
+        resumen: "Lo que deben los clientes y lo que se debe a proveedores, con antigüedad de saldos.",
+        disponibleEn: ["direccion", "finanzas"],
+      },
     ],
   },
   {

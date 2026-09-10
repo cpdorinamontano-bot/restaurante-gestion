@@ -14,6 +14,10 @@ export function useProveedores() {
   return useQuery({ queryKey: ["proveedores"], queryFn: () => fetchTabla("proveedores") });
 }
 
+export function useClientes() {
+  return useQuery({ queryKey: ["clientes"], queryFn: () => fetchTabla("clientes") });
+}
+
 export function useProductos() {
   return useQuery({ queryKey: ["productos"], queryFn: () => fetchTabla("productos") });
 }

@@ -802,6 +802,81 @@ export type Database = {
           },
         ]
       }
+      cobros_clientes: {
+        Row: {
+          created_at: string
+          cuenta_por_cobrar_id: string
+          documento_id: string | null
+          fecha: string
+          forma_pago_id: string | null
+          id: string
+          importe: number
+          notas: string | null
+          referencia: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          cuenta_por_cobrar_id: string
+          documento_id?: string | null
+          fecha: string
+          forma_pago_id?: string | null
+          id?: string
+          importe: number
+          notas?: string | null
+          referencia?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          cuenta_por_cobrar_id?: string
+          documento_id?: string | null
+          fecha?: string
+          forma_pago_id?: string | null
+          id?: string
+          importe?: number
+          notas?: string | null
+          referencia?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cobros_clientes_cuenta_por_cobrar_id_fkey"
+            columns: ["cuenta_por_cobrar_id"]
+            isOneToOne: false
+            referencedRelation: "cuentas_por_cobrar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobros_clientes_cuenta_por_cobrar_id_fkey"
+            columns: ["cuenta_por_cobrar_id"]
+            isOneToOne: false
+            referencedRelation: "v_cxc_antiguedad"
+            referencedColumns: ["cuenta_por_cobrar_id"]
+          },
+          {
+            foreignKeyName: "cobros_clientes_cuenta_por_cobrar_id_fkey"
+            columns: ["cuenta_por_cobrar_id"]
+            isOneToOne: false
+            referencedRelation: "v_cxc_saldos"
+            referencedColumns: ["cuenta_por_cobrar_id"]
+          },
+          {
+            foreignKeyName: "cobros_clientes_forma_pago_id_fkey"
+            columns: ["forma_pago_id"]
+            isOneToOne: false
+            referencedRelation: "formas_pago"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cobros_clientes_usuario_id_fkey"
+            columns: ["usuario_id"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compras: {
         Row: {
           categoria_id: string | null
@@ -1322,6 +1397,85 @@ export type Database = {
           },
           {
             foreignKeyName: "cuentas_bancarias_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cuentas_por_cobrar: {
+        Row: {
+          cliente_id: string
+          concepto: string | null
+          created_at: string
+          created_by: string | null
+          documento_referencia: string | null
+          estatus: Database["public"]["Enums"]["estatus_registro"]
+          fecha_emision: string
+          fecha_vencimiento: string
+          id: string
+          importe_original: number
+          notas: string | null
+          origen: string
+          origen_id: string | null
+          origen_tabla: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cliente_id: string
+          concepto?: string | null
+          created_at?: string
+          created_by?: string | null
+          documento_referencia?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          fecha_emision: string
+          fecha_vencimiento: string
+          id?: string
+          importe_original: number
+          notas?: string | null
+          origen?: string
+          origen_id?: string | null
+          origen_tabla?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cliente_id?: string
+          concepto?: string | null
+          created_at?: string
+          created_by?: string | null
+          documento_referencia?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          fecha_emision?: string
+          fecha_vencimiento?: string
+          id?: string
+          importe_original?: number
+          notas?: string | null
+          origen?: string
+          origen_id?: string | null
+          origen_tabla?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuentas_por_cobrar_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cuentas_por_cobrar_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cuentas_por_cobrar_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "usuarios"
@@ -3483,6 +3637,61 @@ export type Database = {
             columns: ["usuario_id"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_cxc_antiguedad: {
+        Row: {
+          cliente_id: string | null
+          cliente_nombre: string | null
+          concepto: string | null
+          cuenta_por_cobrar_id: string | null
+          dias_vencidos: number | null
+          documento_referencia: string | null
+          estatus_cxc: string | null
+          fecha_emision: string | null
+          fecha_vencimiento: string | null
+          importe_original: number | null
+          origen_id: string | null
+          origen_tabla: string | null
+          rango_antiguedad: string | null
+          saldo: number | null
+          total_cobrado: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuentas_por_cobrar_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_cxc_saldos: {
+        Row: {
+          cliente_id: string | null
+          cliente_nombre: string | null
+          concepto: string | null
+          cuenta_por_cobrar_id: string | null
+          dias_vencidos: number | null
+          documento_referencia: string | null
+          estatus_cxc: string | null
+          fecha_emision: string | null
+          fecha_vencimiento: string | null
+          importe_original: number | null
+          origen_id: string | null
+          origen_tabla: string | null
+          saldo: number | null
+          total_cobrado: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cuentas_por_cobrar_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
             referencedColumns: ["id"]
           },
         ]

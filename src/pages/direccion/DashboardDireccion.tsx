@@ -58,8 +58,9 @@ export default function DashboardDireccion() {
     enabled: !!sucursalId,
     queryFn: async () => {
       const fin = new Date(new Date(periodo).getFullYear(), new Date(periodo).getMonth() + 1, 0).toISOString().slice(0, 10);
-      const [cxp, caja] = await Promise.all([
+      const [cxp, cxc, caja] = await Promise.all([
         supabase.from("v_cxp_saldos").select("saldo, estatus_cxp"),
+        supabase.from("v_cxc_saldos").select("saldo"),
         supabase
           .from("cierres_caja")
           .select("saldo_fisico, fecha")
@@ -68,8 +69,9 @@ export default function DashboardDireccion() {
           .limit(1),
       ]);
       const cxpVencida = (cxp.data ?? []).filter((c) => c.estatus_cxp === "VENCIDO").reduce((s, c) => s + Number(c.saldo ?? 0), 0);
+      const cxcPendiente = (cxc.data ?? []).reduce((s, c) => s + Number(c.saldo ?? 0), 0);
       const cajaDisponible = caja.data?.[0]?.saldo_fisico != null ? Number(caja.data[0].saldo_fisico) : null;
-      return { cxpVencida, cajaDisponible };
+      return { cxpVencida, cxcPendiente, cajaDisponible };
     },
   });
 
@@ -180,10 +182,16 @@ export default function DashboardDireccion() {
       </Card>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-ink-700">Liquidez</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink-700">Liquidez</h2>
+          <Link to="/direccion/cuentas" className="text-xs font-medium text-brand-700 hover:underline">
+            Ver cuentas por cobrar y pagar →
+          </Link>
+        </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <StatCard label="Disponibilidad bancaria" value={formatCurrency(actual?.saldoBancarioActual)} hint="Saldo actual, no depende del mes elegido" />
           {estado?.cajaDisponible != null && <StatCard label="Caja disponible" value={formatCurrency(estado.cajaDisponible)} />}
+          <StatCard label="Cuentas por cobrar" value={formatCurrency(estado?.cxcPendiente)} />
           <StatCard label="Cuentas por pagar" value={formatCurrency(actual?.cxpPendiente)} />
           <StatCard label="CxP vencida" value={formatCurrency(estado?.cxpVencida)} tone={estado?.cxpVencida ? "negativo" : "positivo"} />
         </div>
