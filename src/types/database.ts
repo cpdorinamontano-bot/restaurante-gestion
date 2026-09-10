@@ -3237,6 +3237,7 @@ export type Database = {
           created_by: string | null
           descuentos_total: number
           devoluciones_total: number
+          documento_id: string | null
           estatus: Database["public"]["Enums"]["estatus_registro"]
           estatus_conciliacion: string
           fecha: string
@@ -3260,6 +3261,7 @@ export type Database = {
           created_by?: string | null
           descuentos_total?: number
           devoluciones_total?: number
+          documento_id?: string | null
           estatus?: Database["public"]["Enums"]["estatus_registro"]
           estatus_conciliacion?: string
           fecha: string
@@ -3283,6 +3285,7 @@ export type Database = {
           created_by?: string | null
           descuentos_total?: number
           devoluciones_total?: number
+          documento_id?: string | null
           estatus?: Database["public"]["Enums"]["estatus_registro"]
           estatus_conciliacion?: string
           fecha?: string

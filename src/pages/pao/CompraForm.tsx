@@ -6,6 +6,8 @@ import { useProveedores, useProductos, useUnidadesMedida, useFormasPago, useCate
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Field, Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SubirDocumentoFiscal } from "@/components/forms/SubirDocumentoFiscal";
+import type { DatosDocumentoFiscal } from "@/lib/lectorDocumentos";
 
 interface LineaCompra {
   producto_id: string;
@@ -34,9 +36,27 @@ export default function CompraForm() {
   const [lineas, setLineas] = useState<LineaCompra[]>([{ producto_id: "", cantidad: "", unidad_id: "", costo_unitario: "" }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [documentoId, setDocumentoId] = useState<string | null>(null);
+  const [conceptosDocumento, setConceptosDocumento] = useState<string[]>([]);
+  const [proveedorNoEncontrado, setProveedorNoEncontrado] = useState<string | null>(null);
 
   function actualizarLinea(i: number, campo: keyof LineaCompra, valor: string) {
     setLineas((prev) => prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor } : l)));
+  }
+
+  function aplicarDatosDocumento(datos: DatosDocumentoFiscal, docId: string) {
+    setDocumentoId(docId);
+    setConceptosDocumento(datos.conceptos);
+    setProveedorNoEncontrado(null);
+    if (datos.fecha) setFecha(datos.fecha);
+    if (datos.folio) setFolio(datos.folio);
+    else if (datos.uuid) setFolio(datos.uuid);
+    if (datos.iva != null) setImpuestos(String(datos.iva));
+    if (datos.rfcEmisor) {
+      const coincidencia = proveedores?.find((p: any) => p.rfc?.toUpperCase() === datos.rfcEmisor?.toUpperCase());
+      if (coincidencia) setProveedorId(coincidencia.id);
+      else setProveedorNoEncontrado(`RFC ${datos.rfcEmisor}${datos.nombreEmisor ? ` (${datos.nombreEmisor})` : ""} no está en el catálogo de proveedores — selecciónalo o créalo.`);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -57,6 +77,7 @@ export default function CompraForm() {
           forma_pago_id: formaPagoId || null,
           estatus_pago: estatusPago,
           fecha_vencimiento: fechaVencimiento || null,
+          documento_id: documentoId,
         })
         .select("id")
         .single();
@@ -87,7 +108,10 @@ export default function CompraForm() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-xl font-semibold text-ink-900">Registrar compra</h1>
-      <form onSubmit={handleSubmit}>
+
+      <SubirDocumentoFiscal tipoDocumento="cfdi" onDatos={aplicarDatosDocumento} />
+
+      <form onSubmit={handleSubmit} className="mt-4">
         <Card>
           <CardHeader>
             <CardTitle>Datos generales</CardTitle>
@@ -104,6 +128,7 @@ export default function CompraForm() {
                   ))}
                 </Select>
               </Field>
+              {proveedorNoEncontrado && <p className="mt-1 text-xs text-amber-700">{proveedorNoEncontrado}</p>}
             </div>
             <Field label="Fecha">
               <Input type="date" required value={fecha} onChange={(e) => setFecha(e.target.value)} />
@@ -154,6 +179,16 @@ export default function CompraForm() {
             <CardTitle>Productos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {conceptosDocumento.length > 0 && (
+              <div className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800">
+                Conceptos en el documento (captúralos abajo con el producto del catálogo que corresponda):
+                <ul className="mt-1 list-disc pl-4">
+                  {conceptosDocumento.map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {lineas.map((linea, i) => (
               <div key={i} className="grid grid-cols-4 gap-2">
                 <Select

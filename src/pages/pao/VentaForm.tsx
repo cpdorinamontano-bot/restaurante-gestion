@@ -6,6 +6,8 @@ import { useFormasPago } from "@/hooks/useCatalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { SubirDocumentoFiscal } from "@/components/forms/SubirDocumentoFiscal";
+import type { DatosDocumentoFiscal } from "@/lib/lectorDocumentos";
 
 interface LineaFormaPago {
   forma_pago_id: string;
@@ -26,9 +28,20 @@ export default function VentaForm() {
   const [lineas, setLineas] = useState<LineaFormaPago[]>([{ forma_pago_id: "", importe: "" }]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [documentoId, setDocumentoId] = useState<string | null>(null);
 
   function actualizarLinea(i: number, campo: keyof LineaFormaPago, valor: string) {
     setLineas((prev) => prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor } : l)));
+  }
+
+  function aplicarDatosDocumento(datos: DatosDocumentoFiscal, docId: string) {
+    setDocumentoId(docId);
+    if (datos.fecha) setFecha(datos.fecha);
+    const bruta = datos.total ?? datos.subtotal;
+    if (bruta != null) setVentaBruta(String(bruta));
+    if (datos.iva != null) setImpuestos(String(datos.iva));
+    if (datos.folio) setFolioPos(datos.folio);
+    else if (datos.uuid) setFolioPos(datos.uuid);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,6 +60,7 @@ export default function VentaForm() {
           impuestos: Number(impuestos || 0),
           folio_pos: folioPos || null,
           observaciones: observaciones || null,
+          documento_id: documentoId,
         })
         .select("id")
         .single();
@@ -72,7 +86,10 @@ export default function VentaForm() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <h1 className="text-xl font-semibold text-ink-900">Registrar venta</h1>
-      <form onSubmit={handleSubmit}>
+
+      <SubirDocumentoFiscal tipoDocumento="cfdi" onDatos={aplicarDatosDocumento} />
+
+      <form onSubmit={handleSubmit} className="mt-4">
         <Card>
           <CardHeader>
             <CardTitle>Datos generales</CardTitle>
