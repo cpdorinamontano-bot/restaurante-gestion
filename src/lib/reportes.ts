@@ -198,7 +198,10 @@ export async function fetchReporteMensual(sucursalId: string, periodoInicio: str
   const foodCostTeoricoPct = foodCostTeorico?.food_cost_teorico_pct != null ? Number(foodCostTeorico.food_cost_teorico_pct) : null;
 
   const costoLaboralNomina = Number(laborRes.data?.[0]?.costo_laboral ?? 0);
-  const costoLaboralTotal = costoLaboralNomina + gastosHistoricoNomina;
+  // Cuando el mes ya tiene nómina capturada por empleado (vía periodos_nomina/nomina_detalle),
+  // esa es la fuente autorizada del costo laboral — no se suma al histórico de gastos categoría
+  // "Nómina" porque son los mismos pagos, solo que ahí están al detalle de banco/efectivo.
+  const costoLaboralTotal = costoLaboralNomina > 0 ? costoLaboralNomina : gastosHistoricoNomina;
   const costoLaboralPct = ventasNeta > 0 ? Number(((costoLaboralTotal / ventasNeta) * 100).toFixed(2)) : null;
 
   const gastosFijosMap = new Map<string, number>();
