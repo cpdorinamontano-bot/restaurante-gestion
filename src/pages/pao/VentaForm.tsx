@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFormasPago } from "@/hooks/useCatalogos";
+import { useFormasPago, useLineasNegocio } from "@/hooks/useCatalogos";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Field, Input, Select, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -18,9 +18,11 @@ export default function VentaForm() {
   const { sucursalId } = useAuth();
   const navigate = useNavigate();
   const { data: formasPago } = useFormasPago();
+  const { data: lineasNegocio } = useLineasNegocio(sucursalId);
 
   const [fecha, setFecha] = useState(new Date().toISOString().slice(0, 10));
   const [turno, setTurno] = useState("");
+  const [lineaNegocioId, setLineaNegocioId] = useState("");
   const [ventaBruta, setVentaBruta] = useState("");
   const [impuestos, setImpuestos] = useState("");
   const [folioPos, setFolioPos] = useState("");
@@ -61,6 +63,7 @@ export default function VentaForm() {
           folio_pos: folioPos || null,
           observaciones: observaciones || null,
           documento_id: documentoId,
+          linea_negocio_id: lineaNegocioId || null,
         })
         .select("id")
         .single();
@@ -109,6 +112,16 @@ export default function VentaForm() {
             </Field>
             <Field label="Folio POS">
               <Input value={folioPos} onChange={(e) => setFolioPos(e.target.value)} />
+            </Field>
+            <Field label="Línea de negocio">
+              <Select value={lineaNegocioId} onChange={(e) => setLineaNegocioId(e.target.value)}>
+                <option value="">Sin clasificar</option>
+                {lineasNegocio?.map((l: any) => (
+                  <option key={l.id} value={l.id}>
+                    {l.nombre}
+                  </option>
+                ))}
+              </Select>
             </Field>
             <div className="col-span-2">
               <Field label="Observaciones">

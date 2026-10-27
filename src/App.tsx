@@ -36,6 +36,13 @@ import ActivosDepreciacion from "@/pages/finanzas/ActivosDepreciacion";
 import Impuestos from "@/pages/finanzas/Impuestos";
 import CuentasPorCobrarPagar from "@/pages/finanzas/CuentasPorCobrarPagar";
 import CatalogoReportes from "@/pages/finanzas/CatalogoReportes";
+import PresupuestoAnual from "@/pages/finanzas/PresupuestoAnual";
+import Proyecciones from "@/pages/finanzas/Proyecciones";
+import Escenarios from "@/pages/finanzas/Escenarios";
+import BalanceGeneral from "@/pages/finanzas/BalanceGeneral";
+import Empleados from "@/pages/finanzas/Empleados";
+import Nomina from "@/pages/finanzas/Nomina";
+import VentasPorLinea from "@/pages/finanzas/VentasPorLinea";
 
 import Usuarios from "@/pages/admin/Usuarios";
 
@@ -60,6 +67,9 @@ const NAV_DIRECCION = [
   { to: "/direccion/acumulado", label: "Mes a mes y acumulado" },
   { to: "/direccion/estado-resultados", label: "Estado de Resultados" },
   { to: "/direccion/cuentas", label: "Cuentas por cobrar y pagar" },
+  { to: "/direccion/balance-general", label: "Balance general" },
+  { to: "/direccion/proyecciones", label: "Proyecciones" },
+  { to: "/direccion/escenarios", label: "Escenarios" },
 ];
 
 const NAV_FINANZAS = [
@@ -73,11 +83,18 @@ const NAV_FINANZAS = [
   { to: "/finanzas/caja", label: "Caja" },
   { to: "/finanzas/estados-cuenta", label: "Estados de cuenta" },
   { to: "/finanzas/presupuestos", label: "Presupuestos" },
+  { to: "/finanzas/presupuesto-anual", label: "Presupuesto anual" },
+  { to: "/finanzas/proyecciones", label: "Proyecciones" },
+  { to: "/finanzas/escenarios", label: "Escenarios" },
+  { to: "/finanzas/balance-general", label: "Balance general" },
   { to: "/finanzas/gastos", label: "Gastos" },
   { to: "/finanzas/inventario-mensual", label: "Inventario mensual" },
   { to: "/finanzas/activos", label: "Activos y depreciación" },
   { to: "/finanzas/impuestos", label: "Impuestos" },
   { to: "/finanzas/cuentas", label: "Cuentas por cobrar y pagar" },
+  { to: "/finanzas/empleados", label: "Empleados" },
+  { to: "/finanzas/nomina", label: "Nómina" },
+  { to: "/finanzas/ventas-por-linea", label: "Ventas por línea" },
   { to: "/finanzas/cierre-mensual", label: "Cierre mensual" },
 ];
 
@@ -136,6 +153,9 @@ export default function App() {
               <Route path="acumulado" element={<ReporteAcumulado />} />
               <Route path="estado-resultados" element={<EstadoResultados />} />
               <Route path="cuentas" element={<CuentasPorCobrarPagar />} />
+              <Route path="balance-general" element={<BalanceGeneral />} />
+              <Route path="proyecciones" element={<Proyecciones />} />
+              <Route path="escenarios" element={<Escenarios />} />
             </Route>
 
             <Route
@@ -156,11 +176,18 @@ export default function App() {
               <Route path="caja" element={<Caja />} />
               <Route path="estados-cuenta" element={<EstadosCuenta />} />
               <Route path="presupuestos" element={<Presupuestos />} />
+              <Route path="presupuesto-anual" element={<PresupuestoAnual />} />
+              <Route path="proyecciones" element={<Proyecciones />} />
+              <Route path="escenarios" element={<Escenarios />} />
+              <Route path="balance-general" element={<BalanceGeneral />} />
               <Route path="gastos" element={<GastosLista />} />
               <Route path="inventario-mensual" element={<InventarioMensual />} />
               <Route path="activos" element={<ActivosDepreciacion />} />
               <Route path="impuestos" element={<Impuestos />} />
               <Route path="cuentas" element={<CuentasPorCobrarPagar />} />
+              <Route path="empleados" element={<Empleados />} />
+              <Route path="nomina" element={<Nomina />} />
+              <Route path="ventas-por-linea" element={<VentasPorLinea />} />
               <Route path="cierre-mensual" element={<CierreMensual />} />
             </Route>
 

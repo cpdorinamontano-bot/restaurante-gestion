@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -198,6 +198,70 @@ export type Database = {
           },
           {
             foreignKeyName: "areas_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      balance_otros_conceptos: {
+        Row: {
+          concepto: string
+          created_at: string
+          created_by: string | null
+          estatus: Database["public"]["Enums"]["estatus_registro"]
+          id: string
+          notas: string | null
+          saldo: number
+          sucursal_id: string
+          tipo: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          concepto: string
+          created_at?: string
+          created_by?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          notas?: string | null
+          saldo?: number
+          sucursal_id: string
+          tipo: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          concepto?: string
+          created_at?: string
+          created_by?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          notas?: string | null
+          saldo?: number
+          sucursal_id?: string
+          tipo?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_otros_conceptos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balance_otros_conceptos_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "balance_otros_conceptos_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "usuarios"
@@ -1823,6 +1887,66 @@ export type Database = {
           },
         ]
       }
+      escenarios_financieros: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delta_food_cost_pct: number
+          delta_gastos_pct: number
+          delta_labor_cost_pct: number
+          delta_ventas_pct: number
+          estatus: Database["public"]["Enums"]["estatus_registro"]
+          id: string
+          nombre: string
+          notas: string | null
+          periodo_base: string
+          sucursal_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delta_food_cost_pct?: number
+          delta_gastos_pct?: number
+          delta_labor_cost_pct?: number
+          delta_ventas_pct?: number
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          nombre: string
+          notas?: string | null
+          periodo_base: string
+          sucursal_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delta_food_cost_pct?: number
+          delta_gastos_pct?: number
+          delta_labor_cost_pct?: number
+          delta_ventas_pct?: number
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          nombre?: string
+          notas?: string | null
+          periodo_base?: string
+          sucursal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escenarios_financieros_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escenarios_financieros_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formas_pago: {
         Row: {
           created_at: string
@@ -2202,6 +2326,64 @@ export type Database = {
             columns: ["sucursal_id"]
             isOneToOne: false
             referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lineas_negocio: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          estatus: Database["public"]["Enums"]["estatus_registro"]
+          id: string
+          nombre: string
+          notas: string | null
+          sucursal_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          nombre: string
+          notas?: string | null
+          sucursal_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          estatus?: Database["public"]["Enums"]["estatus_registro"]
+          id?: string
+          nombre?: string
+          notas?: string | null
+          sucursal_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lineas_negocio_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineas_negocio_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: false
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lineas_negocio_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
             referencedColumns: ["id"]
           },
         ]
@@ -3296,6 +3478,60 @@ export type Database = {
           },
         ]
       }
+      supuestos_proyeccion: {
+        Row: {
+          created_at: string
+          crecimiento_gastos_pct: number
+          crecimiento_ventas_pct: number
+          food_cost_objetivo_pct: number | null
+          id: string
+          labor_cost_objetivo_pct: number | null
+          meses_horizonte: number
+          sucursal_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          crecimiento_gastos_pct?: number
+          crecimiento_ventas_pct?: number
+          food_cost_objetivo_pct?: number | null
+          id?: string
+          labor_cost_objetivo_pct?: number | null
+          meses_horizonte?: number
+          sucursal_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          crecimiento_gastos_pct?: number
+          crecimiento_ventas_pct?: number
+          food_cost_objetivo_pct?: number | null
+          id?: string
+          labor_cost_objetivo_pct?: number | null
+          meses_horizonte?: number
+          sucursal_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supuestos_proyeccion_sucursal_id_fkey"
+            columns: ["sucursal_id"]
+            isOneToOne: true
+            referencedRelation: "sucursales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supuestos_proyeccion_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unidades_medida: {
         Row: {
           abreviatura: string
@@ -3398,6 +3634,7 @@ export type Database = {
           folio_pos: string | null
           id: string
           impuestos: number
+          linea_negocio_id: string | null
           notas: string | null
           observaciones: string | null
           origen: string
@@ -3422,6 +3659,7 @@ export type Database = {
           folio_pos?: string | null
           id?: string
           impuestos?: number
+          linea_negocio_id?: string | null
           notas?: string | null
           observaciones?: string | null
           origen?: string
@@ -3446,6 +3684,7 @@ export type Database = {
           folio_pos?: string | null
           id?: string
           impuestos?: number
+          linea_negocio_id?: string | null
           notas?: string | null
           observaciones?: string | null
           origen?: string
@@ -3462,6 +3701,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ventas_linea_negocio_id_fkey"
+            columns: ["linea_negocio_id"]
+            isOneToOne: false
+            referencedRelation: "lineas_negocio"
             referencedColumns: ["id"]
           },
           {

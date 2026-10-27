@@ -62,6 +62,35 @@ const CATEGORIAS: Categoria[] = [
         resumen: "Lo que deben los clientes y lo que se debe a proveedores, con antigüedad de saldos.",
         disponibleEn: ["direccion", "finanzas"],
       },
+      {
+        ruta: "balance-general",
+        titulo: "Balance general",
+        resumen: "Qué tienes, qué debes y qué te queda, a una fecha de corte.",
+        disponibleEn: ["direccion", "finanzas"],
+      },
+    ],
+  },
+  {
+    nombre: "Planeación hacia adelante",
+    reportes: [
+      {
+        ruta: "presupuesto-anual",
+        titulo: "Presupuesto anual",
+        resumen: "Define el objetivo de los 12 meses del año en una sola vista.",
+        disponibleEn: ["finanzas"],
+      },
+      {
+        ruta: "proyecciones",
+        titulo: "Proyecciones",
+        resumen: "Ingresos, costos y utilidad esperados, a partir del histórico real y tus supuestos de crecimiento.",
+        disponibleEn: ["direccion", "finanzas"],
+      },
+      {
+        ruta: "escenarios",
+        titulo: "Escenarios — ¿qué pasa si...?",
+        resumen: "Simula ventas bajas, expansión u otros cambios contra un mes real.",
+        disponibleEn: ["direccion", "finanzas"],
+      },
     ],
   },
   {
@@ -94,6 +123,24 @@ const CATEGORIAS: Categoria[] = [
         ruta: "gastos",
         titulo: "Gastos",
         resumen: "Cada gasto capturado, con su categoría y estatus.",
+        disponibleEn: ["finanzas"],
+      },
+      {
+        ruta: "empleados",
+        titulo: "Empleados",
+        resumen: "Catálogo de personal, con su sueldo base y área.",
+        disponibleEn: ["finanzas"],
+      },
+      {
+        ruta: "nomina",
+        titulo: "Nómina por empleado",
+        resumen: "Costo de cada periodo de nómina, empleado por empleado.",
+        disponibleEn: ["finanzas"],
+      },
+      {
+        ruta: "ventas-por-linea",
+        titulo: "Ventas por línea de negocio",
+        resumen: "Qué tanto vende cada línea (restaurante, café/panadería) cada mes.",
         disponibleEn: ["finanzas"],
       },
       {

@@ -69,6 +69,40 @@ export function useCajas(sucursalId: string | null) {
   });
 }
 
+export function useAreas(sucursalId: string | null) {
+  return useQuery({
+    queryKey: ["areas", sucursalId],
+    enabled: !!sucursalId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("areas")
+        .select("*")
+        .eq("estatus", "activo")
+        .eq("sucursal_id", sucursalId as string)
+        .order("nombre");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useLineasNegocio(sucursalId: string | null) {
+  return useQuery({
+    queryKey: ["lineas_negocio", sucursalId],
+    enabled: !!sucursalId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lineas_negocio")
+        .select("*")
+        .eq("estatus", "activo")
+        .eq("sucursal_id", sucursalId as string)
+        .order("nombre");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useCuentasBancarias() {
   return useQuery({
     queryKey: ["cuentas_bancarias"],
