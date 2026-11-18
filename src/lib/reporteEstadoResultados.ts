@@ -51,7 +51,7 @@ export async function fetchEstadoResultadosMes(sucursalId: string, periodoInicio
   const { inicio, fin } = rangoMes(periodoInicio);
   const periodo = `${periodoInicio.slice(0, 7)}-01`;
 
-  const [ventasRes, gastosRes, movBancariosRes, movCajaRes] = await Promise.all([
+  const [ventasRes, gastosRes, movBancariosRes, movCajaRes, laborRes] = await Promise.all([
     supabase.from("ventas").select("venta_neta").eq("sucursal_id", sucursalId).eq("estatus", "activo").gte("fecha", inicio).lte("fecha", fin),
     supabase
       .from("gastos")
@@ -67,6 +67,7 @@ export async function fetchEstadoResultadosMes(sucursalId: string, periodoInicio
       .gte("fecha", inicio)
       .lte("fecha", fin)
       .in("tipo_movimiento", ["venta_efectivo", "entrada", "deposito", "reposicion"]),
+    supabase.rpc("fn_labor_cost", { p_sucursal_id: sucursalId, p_periodo: periodo }),
   ]);
 
   const ventasFilas = ventasRes.data ?? [];
@@ -91,7 +92,7 @@ export async function fetchEstadoResultadosMes(sucursalId: string, periodoInicio
   }
 
   let compras = 0;
-  let manoDeObra = 0;
+  let manoDeObraHistorico = 0;
   let propinas = 0;
   let comisiones = 0;
   let gastosFijos = 0;
@@ -119,7 +120,7 @@ export async function fetchEstadoResultadosMes(sucursalId: string, periodoInicio
       return;
     }
     if (/^nómina|^nomina/i.test(nombre)) {
-      manoDeObra += monto;
+      manoDeObraHistorico += monto;
       return;
     }
     if (/propina/i.test(nombre)) {
@@ -149,6 +150,14 @@ export async function fetchEstadoResultadosMes(sucursalId: string, periodoInicio
     .map(([nombre, monto]) => ({ nombre, monto }))
     .sort((a, b) => b.monto - a.monto);
   const otrosGastosGenerales = otrosGastosGeneralesDesglose.reduce((s, o) => s + o.monto, 0);
+
+  // Igual que fetchReporteMensual: cuando el mes ya tiene nómina capturada por empleado
+  // (vía periodos_nomina/nomina_detalle), esa es la fuente autorizada del costo laboral —
+  // el histórico de gastos categoría "Nómina" son los mismos pagos, solo al detalle de
+  // banco/efectivo, y no se suman para no duplicar ni reportar una cifra distinta a la de
+  // Reporte Mensual / Presupuestos para el mismo mes.
+  const costoLaboralNomina = Number(laborRes.data?.[0]?.costo_laboral ?? 0);
+  const manoDeObra = costoLaboralNomina > 0 ? costoLaboralNomina : manoDeObraHistorico;
 
   const totalCostoVentas = compras + manoDeObra;
   const totalGastosGenerales = propinas + comisiones + gastosFijos + mantenimiento + impuestos + otrosGastosGenerales;
