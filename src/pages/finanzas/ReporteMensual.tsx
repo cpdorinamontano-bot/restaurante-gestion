@@ -1,18 +1,92 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchReporteMensual, mesAnterior, type ReporteMensual as ReporteMensualData } from "@/lib/reportes";
-import { exportReporteMensualExcel, exportReporteMensualPDF } from "@/lib/reporteExport";
+import { fetchReporteMensual, mesAnterior, sumarPeriodos, type ReporteMensual as ReporteMensualData } from "@/lib/reportes";
+import { fetchEstadoResultadosMes, sumarEstadoResultados, type EstadoResultadosMes } from "@/lib/reporteEstadoResultados";
+import { fetchBalanceGeneralResumen } from "@/lib/balanceGeneralResumen";
+import { exportReporteMensualExcel, exportReporteMensualPDF, exportReporteCompletoSociosPDF } from "@/lib/reporteExport";
 import { calcularPuntoEquilibrio, generarAnalisisGerencial } from "@/lib/analisisGerencial";
 import { AnalisisGerencialCard } from "@/components/finanzas/AnalisisGerencialCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import { FileDown, FileSpreadsheet, TrendingDown, TrendingUp, Minus, AlertTriangle } from "lucide-react";
+import { FileDown, FileSpreadsheet, TrendingDown, TrendingUp, Minus, AlertTriangle, Users } from "lucide-react";
 
 function periodoActualISO() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+}
+
+function nombreMesCorto(periodo: string) {
+  return new Date(`${periodo}T00:00:00`).toLocaleDateString("es-MX", { month: "short" });
+}
+
+function finDeMes(periodo: string) {
+  const [y, m] = periodo.slice(0, 7).split("-").map(Number);
+  return new Date(y, m, 0).toISOString().slice(0, 10);
+}
+
+interface FilaAcumulado {
+  label: string;
+  tipo: "monto" | "pct";
+  get: (r: ReporteMensualData) => number | null;
+  resaltado?: boolean;
+}
+
+const FILAS_ACUMULADO: FilaAcumulado[] = [
+  { label: "Ventas netas", tipo: "monto", get: (r) => (r.ventasFuente === "sin_datos" ? null : r.ventasNeta), resaltado: true },
+  { label: "Compras / costo de mercadería vendida", tipo: "monto", get: (r) => (r.cmvFuente === "sin_datos" ? null : r.cmv) },
+  { label: "Food cost %", tipo: "pct", get: (r) => r.foodCostPct },
+  { label: "Margen bruto", tipo: "monto", get: (r) => r.margenBruto, resaltado: true },
+  { label: "Costo laboral", tipo: "monto", get: (r) => r.costoLaboralTotal },
+  { label: "Costo laboral %", tipo: "pct", get: (r) => r.costoLaboralPct },
+  { label: "Gastos fijos", tipo: "monto", get: (r) => r.gastosFijosTotal },
+  { label: "Gastos variables y operativos", tipo: "monto", get: (r) => r.gastosVariablesTotal },
+  { label: "Impuestos y otros conceptos", tipo: "monto", get: (r) => r.impuestosGasto },
+  { label: "Resultado operativo", tipo: "monto", get: (r) => r.resultadoOperativo, resaltado: true },
+  { label: "Resultado operativo %", tipo: "pct", get: (r) => r.resultadoOperativoPct },
+  { label: "Ganancia / pérdida neta", tipo: "monto", get: (r) => r.gananciaNeta, resaltado: true },
+  { label: "Ganancia neta %", tipo: "pct", get: (r) => r.gananciaNetaPct },
+  { label: "Flujo — ingresos (banco + caja)", tipo: "monto", get: (r) => r.flujoIngresos },
+  { label: "Flujo — egresos (banco + caja)", tipo: "monto", get: (r) => r.flujoEgresos },
+  { label: "Flujo neto", tipo: "monto", get: (r) => r.flujoNeto, resaltado: true },
+];
+
+interface FilaER {
+  label: string;
+  tipo: "monto" | "pct" | "seccion";
+  get?: (m: EstadoResultadosMes) => number | null;
+  resaltado?: boolean;
+  indent?: boolean;
+}
+
+const FILAS_ESTADO_RESULTADOS: FilaER[] = [
+  { label: "Ventas", tipo: "monto", get: (m) => m.ventas, resaltado: true },
+  { label: "Costo de Ventas", tipo: "seccion" },
+  { label: "Compras", tipo: "monto", get: (m) => m.compras, indent: true },
+  { label: "Mano de obra", tipo: "monto", get: (m) => m.manoDeObra, indent: true },
+  { label: "Total costo de Ventas", tipo: "monto", get: (m) => m.totalCostoVentas, resaltado: true },
+  { label: "Gastos Generales", tipo: "seccion" },
+  { label: "Propinas", tipo: "monto", get: (m) => m.propinas, indent: true },
+  { label: "Comisiones", tipo: "monto", get: (m) => m.comisiones, indent: true },
+  { label: "Gastos fijos", tipo: "monto", get: (m) => m.gastosFijos, indent: true },
+  { label: "Mantenimiento", tipo: "monto", get: (m) => m.mantenimiento, indent: true },
+  { label: "Impuestos", tipo: "monto", get: (m) => m.impuestos, indent: true },
+  { label: "Otros gastos generales", tipo: "monto", get: (m) => m.otrosGastosGenerales, indent: true },
+  { label: "Total gastos generales", tipo: "monto", get: (m) => m.totalGastosGenerales, resaltado: true },
+  { label: "Utilidad financiera", tipo: "monto", get: (m) => m.utilidadFinanciera, resaltado: true },
+  { label: "Dividendos y retiros", tipo: "seccion" },
+  { label: "Retiros socios", tipo: "monto", get: (m) => m.retirosSocios, indent: true },
+  { label: "Gastos personales socios", tipo: "monto", get: (m) => m.gastosPersonalesSocios, indent: true },
+  { label: "Nómina socios", tipo: "monto", get: (m) => m.nominaSocios, indent: true },
+  { label: "Total dividendos y retiros", tipo: "monto", get: (m) => m.totalRetSocios, resaltado: true },
+  { label: "Total egresos", tipo: "monto", get: (m) => m.totalEgresos, resaltado: true },
+  { label: "Utilidad neta", tipo: "monto", get: (m) => m.utilidadNeta, resaltado: true },
+];
+
+function valorER(fila: FilaER, mes: EstadoResultadosMes): number | null {
+  if (!fila.get || !mes.tieneDatos) return null;
+  return fila.get(mes);
 }
 
 function Tendencia({ actual, anterior, invertido = false }: { actual: number | null; anterior: number | null; invertido?: boolean }) {
@@ -95,6 +169,7 @@ function Desglose({ items, total }: { items: { nombre: string; monto: number }[]
 export default function ReporteMensual() {
   const { sucursalId } = useAuth();
   const [periodo, setPeriodo] = useState(periodoActualISO());
+  const [generandoCompleto, setGenerandoCompleto] = useState(false);
   const periodoAnteriorISO = mesAnterior(periodo);
 
   const { data: actual, isLoading } = useQuery({
@@ -112,6 +187,64 @@ export default function ReporteMensual() {
   const mesLabel = new Date(`${periodo}T00:00:00`).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
   const equilibrio = actual ? calcularPuntoEquilibrio(actual) : null;
   const analisis = actual ? generarAnalisisGerencial(actual, anterior ?? null, equilibrio) : null;
+
+  async function descargarPDFCompletoSocios() {
+    if (!sucursalId || !actual) return;
+    setGenerandoCompleto(true);
+    try {
+      const anio = periodo.slice(0, 4);
+      const mesHasta = Number(periodo.slice(5, 7));
+      const periodosAnio = Array.from({ length: mesHasta }, (_, i) => `${anio}-${String(i + 1).padStart(2, "0")}-01`);
+
+      const [reportesAnio, mesesER, balance] = await Promise.all([
+        Promise.all(periodosAnio.map((p) => fetchReporteMensual(sucursalId, p))),
+        Promise.all(periodosAnio.map((p) => fetchEstadoResultadosMes(sucursalId, p))),
+        fetchBalanceGeneralResumen(sucursalId, finDeMes(periodo)),
+      ]);
+
+      const acumuladoAnio = sumarPeriodos(reportesAnio);
+      const equilibrioAnio = calcularPuntoEquilibrio(acumuladoAnio);
+      const analisisAcumulado = generarAnalisisGerencial(acumuladoAnio, null, equilibrioAnio);
+      const totalER = sumarEstadoResultados(mesesER);
+
+      exportReporteCompletoSociosPDF({
+        sucursalNombre: "Bianco Storico",
+        periodoLabel: mesLabel,
+        reporteMensual: actual,
+        analisisMensual: analisis,
+        acumulado: {
+          subtitulo: `${nombreMesCorto(reportesAnio[0].periodo)} a ${nombreMesCorto(reportesAnio[reportesAnio.length - 1].periodo)} ${anio}`,
+          columnas: [...reportesAnio.map((r) => nombreMesCorto(r.periodo)), "Acumulado"],
+          filas: FILAS_ACUMULADO.map((fila) => ({
+            label: fila.label,
+            tipo: fila.tipo,
+            resaltado: fila.resaltado,
+            valores: [...reportesAnio.map((r) => fila.get(r)), fila.get(acumuladoAnio)],
+          })),
+          analisis: analisisAcumulado,
+        },
+        estadoResultados: {
+          subtitulo: `${nombreMesCorto(mesesER[0].periodo)} a ${nombreMesCorto(mesesER[mesesER.length - 1].periodo)} ${anio}`,
+          columnas: [...mesesER.map((m) => nombreMesCorto(m.periodo)), "Total"],
+          filas: FILAS_ESTADO_RESULTADOS.map((fila) =>
+            fila.tipo === "seccion"
+              ? { label: fila.label, tipo: "seccion" as const }
+              : {
+                  label: fila.label,
+                  tipo: fila.tipo,
+                  indent: fila.indent,
+                  resaltado: fila.resaltado,
+                  valores: [...mesesER.map((m) => valorER(fila, m)), valorER(fila, totalER)],
+                }
+          ),
+        },
+        balance,
+        nombreArchivo: `reporte-completo-socios-${periodo.slice(0, 7)}.pdf`,
+      });
+    } finally {
+      setGenerandoCompleto(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -137,6 +270,9 @@ export default function ReporteMensual() {
               </Button>
               <Button variant="secondary" size="sm" onClick={() => exportReporteMensualExcel(actual, "Bianco Storico", analisis)}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
+              </Button>
+              <Button size="sm" onClick={descargarPDFCompletoSocios} disabled={generandoCompleto}>
+                <Users className="h-4 w-4" /> {generandoCompleto ? "Generando…" : "PDF completo para socios"}
               </Button>
             </>
           )}

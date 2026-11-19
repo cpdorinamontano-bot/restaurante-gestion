@@ -3,6 +3,7 @@ import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 import type { ReporteMensual } from "@/lib/reportes";
 import type { AnalisisGerencial } from "@/lib/analisisGerencial";
+import type { BalanceGeneralResumen } from "@/lib/balanceGeneralResumen";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { LOGO_BIANCO_STORICO_BASE64 } from "@/assets/logoBase64";
 
@@ -373,7 +374,7 @@ export async function exportTablaExcel(opts: {
   descargarBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), opts.nombreArchivo);
 }
 
-interface FilaMatriz {
+export interface FilaMatriz {
   label: string;
   tipo: "monto" | "pct" | "seccion";
   indent?: boolean;
@@ -486,6 +487,235 @@ export function exportMatrizPDF(opts: {
     14,
     (doc as any).lastAutoTable.finalY + 6
   );
+
+  doc.save(opts.nombreArchivo);
+}
+
+function piePendiente(doc: jsPDF, y: number) {
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    "PENDIENTE indica que el dato aún no ha sido capturado en el sistema. Este reporte nunca estima ni completa cifras faltantes.",
+    14,
+    y
+  );
+  doc.setTextColor(0, 0, 0);
+}
+
+function encabezadoSeccion(doc: jsPDF, titulo: string) {
+  doc.addImage(LOGO_BIANCO_STORICO_BASE64, "PNG", 14, 9, 50, 8.28);
+  doc.setFontSize(11);
+  doc.setTextColor(90, 90, 90);
+  doc.text(titulo, 14, 24);
+  doc.setTextColor(0, 0, 0);
+}
+
+function dibujarMatrizEnDoc(
+  doc: jsPDF,
+  startY: number,
+  columnas: string[],
+  filas: FilaMatriz[]
+): number {
+  const body = filas.map((fila) => {
+    if (fila.tipo === "seccion") {
+      return [
+        {
+          content: fila.label,
+          colSpan: columnas.length + 1,
+          styles: { fontStyle: "bold" as const, fillColor: [239, 237, 230] as [number, number, number] },
+        },
+      ];
+    }
+    const label = fila.indent ? `  ${fila.label}` : fila.label;
+    const valores = (fila.valores ?? []).map((v) => (v === null ? "PENDIENTE" : fila.tipo === "pct" ? formatPercent(v) : formatCurrency(v)));
+    return [label, ...valores];
+  });
+
+  autoTable(doc, {
+    startY,
+    head: [["Concepto", ...columnas]],
+    body,
+    theme: "grid",
+    headStyles: { fillColor: [23, 79, 61] },
+    styles: { fontSize: 8 },
+  });
+  return (doc as any).lastAutoTable.finalY;
+}
+
+/**
+ * PDF único para socios y dirección: reúne, en un solo archivo, el Reporte Gerencial
+ * Mensual del periodo, el comparativo Mes a mes y acumulado del año, el Estado de
+ * Resultados (mes a mes y acumulado) y el Balance General a la fecha de corte.
+ * Pensado para descargarse una sola vez y enviarse por correo a los socios.
+ */
+export function exportReporteCompletoSociosPDF(opts: {
+  sucursalNombre: string;
+  periodoLabel: string;
+  reporteMensual: ReporteMensual;
+  analisisMensual?: AnalisisGerencial | null;
+  acumulado: { subtitulo: string; columnas: string[]; filas: FilaMatriz[]; analisis?: AnalisisGerencial | null };
+  estadoResultados: { subtitulo: string; columnas: string[]; filas: FilaMatriz[] };
+  balance?: BalanceGeneralResumen | null;
+  nombreArchivo: string;
+}) {
+  const { reporteMensual: r } = opts;
+  const doc = new jsPDF();
+
+  // Portada
+  doc.addImage(LOGO_BIANCO_STORICO_BASE64, "PNG", 14, 16, 70, 11.6);
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("Reporte financiero para socios", 14, 50);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(13);
+  doc.setTextColor(90, 90, 90);
+  doc.text(`${opts.sucursalNombre} · ${opts.periodoLabel}`, 14, 60);
+  doc.setFontSize(10);
+  doc.text(
+    doc.splitTextToSize(
+      "Incluye en un solo archivo: Reporte Gerencial Mensual, Mes a mes y acumulado del año, Estado de Resultados y Balance General a la fecha de corte.",
+      180
+    ),
+    14,
+    72
+  );
+  doc.setFontSize(8);
+  doc.text(`Generado el ${new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.`, 14, 90);
+  doc.setTextColor(0, 0, 0);
+
+  // Sección 1 — Reporte Gerencial Mensual
+  doc.addPage("a4", "portrait");
+  encabezadoSeccion(doc, `1. Reporte Gerencial Mensual · ${opts.sucursalNombre} · ${opts.periodoLabel}`);
+  const ventasFuenteNota =
+    r.ventasFuente === "ingresos_bancos_caja" ? " (= ingresos de banco y caja, sin módulo de Ventas)" : "";
+  let y = opts.analisisMensual ? agregarAnalisisPDF(doc, 30, opts.analisisMensual) : 30;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Ventas", "Monto"]],
+    body: [
+      [`Ventas totales (brutas)${ventasFuenteNota}`, formatCurrency(r.ventasFuente === "sin_datos" ? null : r.ventasBruta)],
+      ["(-) Descuentos", formatCurrency(r.descuentos)],
+      ["(-) Devoluciones", formatCurrency(r.devoluciones)],
+      ["(-) Cancelaciones", formatCurrency(r.cancelaciones)],
+      ["Ventas netas", formatCurrency(r.ventasFuente === "sin_datos" ? null : r.ventasNeta)],
+      ["Cortesías (informativo, no resta de venta neta)", formatCurrency(r.cortesias)],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [23, 79, 61] },
+  });
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 6,
+    head: [["Costo de mercadería / Food cost", "Monto", "% s/ ventas"]],
+    body: [
+      filaCaptura("Compras y costo de mercadería vendida (CMV)", r.cmvFuente === "sin_datos" ? null : r.cmv, r.foodCostPct),
+      filaCaptura("Margen bruto", r.margenBruto, r.margenBrutoPct),
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [23, 79, 61] },
+  });
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 6,
+    head: [["Costo laboral, gastos y resultado", "Monto", "% s/ ventas"]],
+    body: [
+      filaCaptura("Costo laboral total", r.costoLaboralTotal, r.costoLaboralPct),
+      ["Gastos fijos", formatCurrency(r.gastosFijosTotal), ""],
+      ["Gastos variables y operativos", formatCurrency(r.gastosVariablesTotal), ""],
+      filaCaptura("Resultado operativo", r.resultadoOperativo, r.resultadoOperativoPct),
+      filaCaptura("Impuestos y otros conceptos", -r.impuestosGasto, null),
+      filaCaptura("Ganancia / pérdida neta", r.gananciaNeta, r.gananciaNetaPct),
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [17, 24, 21] },
+    bodyStyles: { fontStyle: "bold" },
+  });
+
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 6,
+    head: [["Flujo de efectivo y saldos", "Monto"]],
+    body: [
+      ["Ingresos del periodo (bancos + caja)", formatCurrency(r.flujoIngresos)],
+      ["Egresos del periodo (bancos + caja)", formatCurrency(r.flujoEgresos)],
+      ["Flujo neto del periodo", formatCurrency(r.flujoNeto)],
+      ["Saldo bancario actual (a la fecha de consulta)", formatCurrency(r.saldoBancarioActual)],
+      ["Cuentas por pagar pendientes (saldo actual)", formatCurrency(r.cxpPendiente)],
+      ["Obligaciones/impuestos pendientes (saldo actual)", formatCurrency(r.obligacionesPendientes)],
+    ],
+    theme: "grid",
+    headStyles: { fillColor: [23, 79, 61] },
+  });
+  piePendiente(doc, (doc as any).lastAutoTable.finalY + 8);
+
+  // Sección 2 — Mes a mes y acumulado
+  doc.addPage("a4", "landscape");
+  encabezadoSeccion(doc, `2. Mes a mes y acumulado · ${opts.sucursalNombre} · ${opts.acumulado.subtitulo}`);
+  y = opts.acumulado.analisis ? agregarAnalisisPDF(doc, 30, opts.acumulado.analisis) : 30;
+  y = dibujarMatrizEnDoc(doc, y, opts.acumulado.columnas, opts.acumulado.filas);
+  piePendiente(doc, y + 6);
+
+  // Sección 3 — Estado de Resultados
+  doc.addPage("a4", "landscape");
+  encabezadoSeccion(doc, `3. Estado de Resultados · ${opts.sucursalNombre} · ${opts.estadoResultados.subtitulo}`);
+  y = dibujarMatrizEnDoc(doc, 30, opts.estadoResultados.columnas, opts.estadoResultados.filas);
+  piePendiente(doc, y + 6);
+
+  // Sección 4 — Balance General
+  if (opts.balance) {
+    const b = opts.balance;
+    doc.addPage("a4", "portrait");
+    encabezadoSeccion(doc, `4. Balance General · ${opts.sucursalNombre} · Corte al ${b.corte}`);
+    autoTable(doc, {
+      startY: 30,
+      head: [["Activos — qué tienes", "Monto"]],
+      body: [
+        ["Bancos", formatCurrency(b.bancos)],
+        ["Caja", formatCurrency(b.caja)],
+        ["Cuentas por cobrar", formatCurrency(b.cuentasPorCobrar)],
+        ["Inventario", formatCurrency(b.inventario)],
+        ["Activos fijos (valor neto)", formatCurrency(b.activosFijosNetos)],
+        ...b.otrosActivos.map((c) => [c.concepto, formatCurrency(c.monto)]),
+        ["Total activos", formatCurrency(b.totalActivos)],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [23, 79, 61] },
+      bodyStyles: { fontStyle: "normal" },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.row.index === data.table.body.length - 1) data.cell.styles.fontStyle = "bold";
+      },
+    });
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [["Pasivos — qué debes", "Monto"]],
+      body: [
+        ["Cuentas por pagar", formatCurrency(b.cuentasPorPagar)],
+        ...b.otrosPasivos.map((c) => [c.concepto, formatCurrency(c.monto)]),
+        ["Total pasivos", formatCurrency(b.totalPasivos)],
+      ],
+      theme: "grid",
+      headStyles: { fillColor: [23, 79, 61] },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.row.index === data.table.body.length - 1) data.cell.styles.fontStyle = "bold";
+      },
+    });
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 6,
+      head: [["Capital — qué te queda", "Monto"]],
+      body: [["Activos totales menos pasivos totales", formatCurrency(b.capital)]],
+      theme: "grid",
+      headStyles: { fillColor: [17, 24, 21] },
+      bodyStyles: { fontStyle: "bold", fontSize: 11 },
+    });
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(
+      "Saldos a la fecha de corte seleccionada. Cuentas por cobrar/pagar e inventario según el último registro capturado hasta esa fecha.",
+      14,
+      (doc as any).lastAutoTable.finalY + 6
+    );
+    doc.setTextColor(0, 0, 0);
+  }
 
   doc.save(opts.nombreArchivo);
 }
