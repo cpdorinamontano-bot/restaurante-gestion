@@ -3,11 +3,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, FileSpreadsheet } from "lucide-react";
 
 const CAMPOS = ["sueldo", "bonos", "horas_extras", "prestaciones", "cargas_patronales", "otros_costos"] as const;
 type Campo = (typeof CAMPOS)[number];
@@ -124,6 +125,31 @@ export default function Nomina() {
 
   const costoTotalPeriodo = (empleados ?? []).reduce((s, e) => s + costoTotalFila(e.id), 0);
 
+  function exportar() {
+    if (!empleados?.length || !periodoActivo) return;
+    exportTablaExcel({
+      titulo: "Bianco Storico — Nómina por empleado",
+      subtitulo: `Periodo: ${formatDate(periodoActivo.fecha_inicio)} — ${formatDate(periodoActivo.fecha_fin)} (${periodoActivo.tipo})`,
+      columnas: [
+        { header: "Empleado", width: 26 },
+        { header: "Sueldo", width: 14, tipo: "moneda" },
+        { header: "Bonos", width: 14, tipo: "moneda" },
+        { header: "Horas extra", width: 14, tipo: "moneda" },
+        { header: "Prestaciones", width: 14, tipo: "moneda" },
+        { header: "Cargas patronales", width: 16, tipo: "moneda" },
+        { header: "Otros", width: 14, tipo: "moneda" },
+        { header: "Total", width: 16, tipo: "moneda" },
+      ],
+      filas: empleados.map((e) => [
+        e.nombre,
+        ...CAMPOS.map((campo) => Number(valorCelda(e.id, campo) || 0)),
+        costoTotalFila(e.id),
+      ]),
+      filaTotales: ["Total", "", "", "", "", "", "", costoTotalPeriodo],
+      nombreArchivo: `nomina-${periodoActivo.fecha_inicio}.xlsx`,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -131,12 +157,19 @@ export default function Nomina() {
           <h1 className="font-display text-2xl font-semibold text-ink-900">Nómina por empleado</h1>
           <p className="text-sm text-ink-500">Captura el costo de cada periodo, por empleado. El costo laboral del mes se calcula a partir de aquí.</p>
         </div>
-        <Link
-          to="/finanzas/empleados"
-          className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
-        >
-          Catálogo de empleados <ArrowUpRight className="h-4 w-4" />
-        </Link>
+        <div className="flex items-center gap-2">
+          {!!empleados?.length && periodoActivo && (
+            <Button variant="secondary" size="sm" onClick={exportar}>
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+          <Link
+            to="/finanzas/empleados"
+            className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
+          >
+            Catálogo de empleados <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
 
       <Card>

@@ -8,9 +8,13 @@ import {
   type MetricaDiaria,
   type ReporteMensual,
 } from "@/lib/reportes";
+import { calcularPuntoEquilibrio, generarAnalisisGerencial } from "@/lib/analisisGerencial";
+import { AnalisisGerencialCard } from "@/components/finanzas/AnalisisGerencialCard";
+import { exportMatrizExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, FileSpreadsheet } from "lucide-react";
 
 interface Fila {
   key: string;
@@ -112,10 +116,28 @@ export default function ReporteAcumulado() {
   });
 
   const acumulado = reportes ? sumarPeriodos(reportes) : null;
+  const equilibrio = acumulado ? calcularPuntoEquilibrio(acumulado) : null;
+  const analisis = acumulado ? generarAnalisisGerencial(acumulado, null, equilibrio) : null;
 
   function formatoCelda(fila: Fila, valor: number | null) {
     if (valor === null) return "PENDIENTE";
     return fila.tipo === "pct" ? formatPercent(valor) : formatCurrency(valor);
+  }
+
+  function exportar() {
+    if (!reportes || !acumulado) return;
+    exportMatrizExcel({
+      titulo: "Bianco Storico — Mes a mes y acumulado",
+      subtitulo: `${nombreMesCorto(reportes[0].periodo)} a ${nombreMesCorto(reportes[reportes.length - 1].periodo)}`,
+      columnas: [...reportes.map((r) => nombreMesCorto(r.periodo)), "Acumulado"],
+      filas: FILAS.map((fila) => ({
+        label: fila.label,
+        tipo: fila.tipo,
+        resaltado: fila.resaltado,
+        valores: [...reportes.map((r) => fila.get(r)), fila.get(acumulado)],
+      })),
+      nombreArchivo: `mes-a-mes-acumulado-${desde}_${hasta}.xlsx`,
+    });
   }
 
   return (
@@ -134,8 +156,15 @@ export default function ReporteAcumulado() {
             Hasta
             <input type="month" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm" />
           </label>
+          {reportes && acumulado && (
+            <Button variant="secondary" size="sm" onClick={exportar}>
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
         </div>
       </div>
+
+      {analisis && <AnalisisGerencialCard analisis={analisis} />}
 
       <Card>
         <CardHeader>

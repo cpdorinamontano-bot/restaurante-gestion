@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 export default function Gastos() {
   const [mes, setMes] = useState("2026-03");
@@ -34,19 +37,44 @@ export default function Gastos() {
   });
   const topCategorias = [...porCategoria.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
 
+  function exportar() {
+    if (!gastos?.length) return;
+    exportTablaExcel({
+      titulo: "Bianco Storico — Gastos",
+      subtitulo: `Mes: ${mes}`,
+      columnas: [
+        { header: "Fecha", width: 14 },
+        { header: "Concepto", width: 32 },
+        { header: "Categoría", width: 26 },
+        { header: "Estatus", width: 14 },
+        { header: "Total", width: 16, tipo: "moneda" },
+      ],
+      filas: gastos.map((g: any) => [g.fecha, g.concepto, g.categorias_gastos?.nombre ?? "Sin categoría", g.estatus_pago, Number(g.subtotal) + Number(g.impuestos)]),
+      filaTotales: ["", "", "", "Total", total],
+      nombreArchivo: `gastos-${mes}.xlsx`,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink-900">Gastos</h1>
-        <label className="flex flex-col text-xs font-medium text-ink-600">
-          Mes
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
-          />
-        </label>
+        <div className="flex items-end gap-3">
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Mes
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
+            />
+          </label>
+          {!!gastos?.length && (
+            <Button variant="secondary" size="sm" onClick={exportar}>
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

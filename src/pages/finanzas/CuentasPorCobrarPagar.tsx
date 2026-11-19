@@ -5,11 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useClientes } from "@/hooks/useCatalogos";
 import { crearCuentaPorCobrar, fetchCuentasPorCobrar, registrarCobro } from "@/lib/cuentasPorCobrar";
 import { fetchCuentasPorPagar, registrarPago } from "@/lib/cuentasPorPagar";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { StatCard } from "@/components/ui/StatCard";
 import { Button } from "@/components/ui/Button";
 import { Badge, estatusConciliacionTone } from "@/components/ui/Badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 const cxcVacio = { clienteId: "", concepto: "", fechaEmision: new Date().toISOString().slice(0, 10), fechaVencimiento: "", importe: "" };
 
@@ -105,7 +107,33 @@ export default function CuentasPorCobrarPagar() {
 
       {/* ---------------- CUENTAS POR COBRAR ---------------- */}
       <div className="space-y-4">
-        <h2 className="text-sm font-semibold text-ink-700">Cuentas por cobrar</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink-700">Cuentas por cobrar</h2>
+          {!!cxc?.length && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                exportTablaExcel({
+                  titulo: "Bianco Storico — Cuentas por cobrar",
+                  columnas: [
+                    { header: "Cliente", width: 26 },
+                    { header: "Concepto", width: 24 },
+                    { header: "Vencimiento", width: 14 },
+                    { header: "Saldo", width: 16, tipo: "moneda" },
+                    { header: "Días vencido", width: 14, tipo: "numero" },
+                    { header: "Estado", width: 14 },
+                  ],
+                  filas: cxc!.map((c) => [c.clienteNombre, c.concepto ?? "", c.fechaVencimiento, c.saldo, c.diasVencidos, c.estatus]),
+                  filaTotales: ["", "", "Total", resumenCxc?.total ?? 0, "", ""],
+                  nombreArchivo: "cuentas-por-cobrar.xlsx",
+                })
+              }
+            >
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-2">
           <StatCard label="Total por cobrar" value={formatCurrency(resumenCxc?.total ?? 0)} />
           <StatCard label="Vencido" value={formatCurrency(resumenCxc?.vencido ?? 0)} tone={resumenCxc?.vencido ? "negativo" : "positivo"} />
@@ -227,7 +255,32 @@ export default function CuentasPorCobrarPagar() {
 
       {/* ---------------- CUENTAS POR PAGAR ---------------- */}
       <div className="space-y-4">
-        <h2 className="text-sm font-semibold text-ink-700">Cuentas por pagar</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-ink-700">Cuentas por pagar</h2>
+          {!!cxp?.length && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                exportTablaExcel({
+                  titulo: "Bianco Storico — Cuentas por pagar",
+                  columnas: [
+                    { header: "Proveedor", width: 26 },
+                    { header: "Vencimiento", width: 14 },
+                    { header: "Saldo", width: 16, tipo: "moneda" },
+                    { header: "Días vencido", width: 14, tipo: "numero" },
+                    { header: "Estado", width: 14 },
+                  ],
+                  filas: cxp!.map((c) => [c.proveedorNombre, c.fechaVencimiento, c.saldo, c.diasVencidos, c.estatus]),
+                  filaTotales: ["", "Total", resumenCxp?.total ?? 0, "", ""],
+                  nombreArchivo: "cuentas-por-pagar.xlsx",
+                })
+              }
+            >
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-2">
           <StatCard label="Total por pagar" value={formatCurrency(resumenCxp?.total ?? 0)} />
           <StatCard label="Vencido" value={formatCurrency(resumenCxp?.vencido ?? 0)} tone={resumenCxp?.vencido ? "negativo" : "positivo"} />

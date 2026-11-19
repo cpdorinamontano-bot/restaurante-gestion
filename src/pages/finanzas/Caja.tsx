@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 const TIPOS_INGRESO = ["venta_efectivo", "entrada", "deposito", "reposicion"];
 
@@ -34,6 +37,27 @@ export default function Caja() {
     .filter((m) => !TIPOS_INGRESO.includes(m.tipo_movimiento))
     .reduce((s, m) => s + Number(m.importe ?? 0), 0);
 
+  function exportar() {
+    if (!movimientos?.length) return;
+    exportTablaExcel({
+      titulo: "Bianco Storico — Movimientos de caja",
+      subtitulo: `Mes: ${mes}`,
+      columnas: [
+        { header: "Fecha", width: 14 },
+        { header: "Concepto", width: 32 },
+        { header: "Tipo", width: 16 },
+        { header: "Salida", width: 16, tipo: "moneda" },
+        { header: "Entrada", width: 16, tipo: "moneda" },
+      ],
+      filas: movimientos.map((m: any) => {
+        const esIngreso = TIPOS_INGRESO.includes(m.tipo_movimiento);
+        return [m.fecha, m.notas, m.tipo_movimiento, !esIngreso ? Number(m.importe) : null, esIngreso ? Number(m.importe) : null];
+      }),
+      filaTotales: ["", "", "Total", totalEgresos, totalIngresos],
+      nombreArchivo: `caja-${mes}.xlsx`,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -41,15 +65,22 @@ export default function Caja() {
           <h1 className="text-xl font-semibold text-ink-900">Caja</h1>
           <p className="text-sm text-ink-500">Efectivo en caja — entradas y salidas capturadas.</p>
         </div>
-        <label className="flex flex-col text-xs font-medium text-ink-600">
-          Mes
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
-          />
-        </label>
+        <div className="flex items-end gap-3">
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Mes
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
+            />
+          </label>
+          {!!movimientos?.length && (
+            <Button variant="secondary" size="sm" onClick={exportar}>
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

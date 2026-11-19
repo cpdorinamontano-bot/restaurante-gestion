@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 export default function Bancos() {
   const [mes, setMes] = useState("2026-08");
@@ -37,19 +40,44 @@ export default function Bancos() {
   const totalCargo = (movimientos ?? []).reduce((s, m) => s + Number(m.cargo ?? 0), 0);
   const totalAbono = (movimientos ?? []).reduce((s, m) => s + Number(m.abono ?? 0), 0);
 
+  function exportar() {
+    if (!movimientos?.length) return;
+    exportTablaExcel({
+      titulo: "Bianco Storico — Movimientos bancarios",
+      subtitulo: `Mes: ${mes}`,
+      columnas: [
+        { header: "Fecha", width: 14 },
+        { header: "Concepto", width: 32 },
+        { header: "Tipo", width: 16 },
+        { header: "Cargo", width: 16, tipo: "moneda" },
+        { header: "Abono", width: 16, tipo: "moneda" },
+      ],
+      filas: movimientos.map((m: any) => [m.fecha, m.concepto, m.tipo_movimiento, Number(m.cargo) || null, Number(m.abono) || null]),
+      filaTotales: ["", "", "Total", totalCargo, totalAbono],
+      nombreArchivo: `bancos-${mes}.xlsx`,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink-900">Bancos</h1>
-        <label className="flex flex-col text-xs font-medium text-ink-600">
-          Mes
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
-          />
-        </label>
+        <div className="flex items-end gap-3">
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Mes
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
+            />
+          </label>
+          {!!movimientos?.length && (
+            <Button variant="secondary" size="sm" onClick={exportar}>
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

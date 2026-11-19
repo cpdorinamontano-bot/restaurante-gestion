@@ -3,9 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLineasNegocio } from "@/hooks/useCatalogos";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 const SIN_CLASIFICAR = "sin_clasificar";
 
@@ -94,15 +96,47 @@ export default function VentasPorLinea() {
           <h1 className="font-display text-2xl font-semibold text-ink-900">Ventas por línea de negocio</h1>
           <p className="text-sm text-ink-500">Qué tanto vende cada línea (ej. restaurante vs. café/panadería), mes a mes.</p>
         </div>
-        <label className="flex flex-col text-xs font-medium text-ink-600">
-          Mes
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
-          />
-        </label>
+        <div className="flex items-end gap-3">
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Mes
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
+            />
+          </label>
+          {!!ventas?.length && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                exportTablaExcel({
+                  titulo: "Bianco Storico — Ventas por línea de negocio",
+                  subtitulo: `Mes: ${mes}`,
+                  columnas: [
+                    { header: "Fecha", width: 14 },
+                    { header: "Turno", width: 14 },
+                    { header: "Folio", width: 16 },
+                    { header: "Venta neta", width: 16, tipo: "moneda" },
+                    { header: "Línea de negocio", width: 24 },
+                  ],
+                  filas: ventas!.map((v) => [
+                    v.fecha,
+                    v.turno ?? "",
+                    v.folio_pos ?? "",
+                    Number(v.venta_neta ?? 0),
+                    v.linea_negocio_id ? lineas?.find((l: any) => l.id === v.linea_negocio_id)?.nombre ?? "—" : "Sin clasificar",
+                  ]),
+                  filaTotales: ["", "", "", resumen.total, "Total"],
+                  nombreArchivo: `ventas-por-linea-${mes}.xlsx`,
+                })
+              }
+            >
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>

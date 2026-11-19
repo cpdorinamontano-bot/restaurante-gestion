@@ -2,10 +2,12 @@ import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchEstadoResultadosMes, sumarEstadoResultados, type EstadoResultadosMes } from "@/lib/reporteEstadoResultados";
+import { exportMatrizExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, FileSpreadsheet } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -127,6 +129,32 @@ export default function EstadoResultados() {
     return fila.tipo === "pct" ? formatPercent(valor) : formatCurrency(valor);
   }
 
+  function valorExport(fila: Fila, mes: EstadoResultadosMes): number | null {
+    if (!fila.get || !mes.tieneDatos) return null;
+    return fila.get(mes);
+  }
+
+  function exportar() {
+    if (!meses || !total) return;
+    exportMatrizExcel({
+      titulo: "Bianco Storico — Estado de Resultados",
+      subtitulo: `${nombreMesCorto(meses[0].periodo)} a ${nombreMesCorto(meses[meses.length - 1].periodo)}`,
+      columnas: [...meses.map((m) => nombreMesCorto(m.periodo)), "Total"],
+      filas: FILAS.map((fila) =>
+        fila.tipo === "seccion"
+          ? { label: fila.label, tipo: "seccion" as const }
+          : {
+              label: fila.label,
+              tipo: fila.tipo,
+              indent: fila.indent,
+              resaltado: fila.resaltado,
+              valores: [...meses.map((m) => valorExport(fila, m)), valorExport(fila, total)],
+            }
+      ),
+      nombreArchivo: `estado-de-resultados-${desde}_${hasta}.xlsx`,
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -146,6 +174,11 @@ export default function EstadoResultados() {
             Hasta
             <input type="month" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm" />
           </label>
+          {meses && total && (
+            <Button variant="secondary" size="sm" onClick={exportar}>
+              <FileSpreadsheet className="h-4 w-4" /> Excel
+            </Button>
+          )}
         </div>
       </div>
 

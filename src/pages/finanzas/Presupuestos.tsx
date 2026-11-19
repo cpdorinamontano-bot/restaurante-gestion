@@ -3,9 +3,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchReporteMensual } from "@/lib/reportes";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatPercent } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 type Categoria = "ventas" | "food_cost" | "labor_cost" | "gastos" | "utilidad";
 
@@ -93,15 +95,43 @@ export default function Presupuestos() {
           <h1 className="font-display text-2xl font-semibold text-ink-900">Presupuestos</h1>
           <p className="text-sm text-ink-500">Define el objetivo de cada mes y compáralo contra lo real ya calculado en el reporte.</p>
         </div>
-        <label className="flex flex-col text-xs font-medium text-ink-600">
-          Mes
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => setMes(e.target.value)}
-            className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
-          />
-        </label>
+        <div className="flex items-end gap-3">
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Mes
+            <input
+              type="month"
+              value={mes}
+              onChange={(e) => setMes(e.target.value)}
+              className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
+            />
+          </label>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              exportTablaExcel({
+                titulo: "Bianco Storico — Presupuestos",
+                subtitulo: `Mes: ${mes}`,
+                columnas: [
+                  { header: "Concepto", width: 28 },
+                  { header: "Objetivo del mes", width: 18, tipo: "numero" },
+                  { header: "Real", width: 18, tipo: "numero" },
+                  { header: "Variación %", width: 14, tipo: "numero" },
+                ],
+                filas: FILAS.map((fila) => {
+                  const real = reales ? fila.real(reales) : null;
+                  const objetivoStr = objetivoActual(fila.categoria);
+                  const objetivo = objetivoStr === "" ? null : Number(objetivoStr);
+                  const variacion = real !== null && objetivo !== null && objetivo !== 0 ? ((real - objetivo) / Math.abs(objetivo)) * 100 : null;
+                  return [fila.label, objetivo, real, variacion];
+                }),
+                nombreArchivo: `presupuestos-${mes}.xlsx`,
+              })
+            }
+          >
+            <FileSpreadsheet className="h-4 w-4" /> Excel
+          </Button>
+        </div>
       </div>
 
       <Card>

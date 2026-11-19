@@ -210,3 +210,130 @@ export async function exportReporteMensualExcel(r: ReporteMensual, sucursalNombr
     `reporte-gerencial-${r.periodo.slice(0, 7)}.xlsx`
   );
 }
+
+type TipoColumna = "texto" | "moneda" | "pct" | "numero" | "fecha";
+
+interface ColumnaTabla {
+  header: string;
+  width?: number;
+  tipo?: TipoColumna;
+}
+
+function aplicarFormatoCelda(cell: ExcelJS.Cell, tipo: TipoColumna | undefined, valor: unknown) {
+  if (valor === null || valor === undefined || valor === "") {
+    cell.value = valor === "" ? "" : valor === null ? "PENDIENTE" : valor;
+    return;
+  }
+  if (tipo === "moneda") {
+    cell.value = Number(valor);
+    cell.numFmt = '"$"#,##0.00;[Red]-"$"#,##0.00';
+  } else if (tipo === "pct") {
+    cell.value = Number(valor) / 100;
+    cell.numFmt = "0.0%";
+  } else if (tipo === "numero") {
+    cell.value = Number(valor);
+  } else {
+    cell.value = valor as string;
+  }
+}
+
+/**
+ * Exporta una tabla simple (encabezados + filas) a Excel — para reportes de lista
+ * (gastos, movimientos de banco/caja, empleados, cuentas por cobrar/pagar, etc.).
+ * Cada página aporta sus propias columnas y filas ya resueltas; esta función solo
+ * formatea y descarga el archivo.
+ */
+export async function exportTablaExcel(opts: {
+  titulo: string;
+  subtitulo?: string;
+  columnas: ColumnaTabla[];
+  filas: (string | number | null)[][];
+  nombreArchivo: string;
+  filaTotales?: (string | number | null)[];
+}) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Bianco Storico — Sistema de Gestión";
+  const ws = wb.addWorksheet("Datos");
+
+  ws.columns = opts.columnas.map((c) => ({ width: c.width ?? 20 }));
+  const tituloRow = ws.addRow([opts.titulo]);
+  tituloRow.font = { bold: true, size: 13 };
+  if (opts.subtitulo) ws.addRow([opts.subtitulo]);
+  ws.addRow([]);
+
+  const headerRow = ws.addRow(opts.columnas.map((c) => c.header));
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF174F3D" } };
+  });
+
+  opts.filas.forEach((fila) => {
+    const row = ws.addRow(fila);
+    fila.forEach((valor, i) => aplicarFormatoCelda(row.getCell(i + 1), opts.columnas[i]?.tipo, valor));
+  });
+
+  if (opts.filaTotales) {
+    const row = ws.addRow(opts.filaTotales);
+    row.font = { bold: true };
+    row.eachCell((cell) => {
+      cell.border = { top: { style: "thin" } };
+    });
+    opts.filaTotales.forEach((valor, i) => aplicarFormatoCelda(row.getCell(i + 1), opts.columnas[i]?.tipo, valor));
+  }
+
+  const buffer = await wb.xlsx.writeBuffer();
+  descargarBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), opts.nombreArchivo);
+}
+
+interface FilaMatriz {
+  label: string;
+  tipo: "monto" | "pct" | "seccion";
+  indent?: boolean;
+  resaltado?: boolean;
+  valores?: (number | null)[];
+}
+
+/**
+ * Exporta una tabla comparativa mes a mes + acumulado (Estado de Resultados,
+ * Mes a mes y acumulado) a Excel, manteniendo la misma estructura de filas/columnas
+ * que se ve en pantalla.
+ */
+export async function exportMatrizExcel(opts: {
+  titulo: string;
+  subtitulo?: string;
+  columnas: string[]; // encabezados de periodo (ya incluye la última columna de total)
+  filas: FilaMatriz[];
+  nombreArchivo: string;
+}) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Bianco Storico — Sistema de Gestión";
+  const ws = wb.addWorksheet("Datos");
+
+  ws.columns = [{ width: 38 }, ...opts.columnas.map(() => ({ width: 16 }))];
+  const tituloRow = ws.addRow([opts.titulo]);
+  tituloRow.font = { bold: true, size: 13 };
+  if (opts.subtitulo) ws.addRow([opts.subtitulo]);
+  ws.addRow([]);
+
+  const headerRow = ws.addRow(["Concepto", ...opts.columnas]);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF174F3D" } };
+  });
+
+  opts.filas.forEach((fila) => {
+    if (fila.tipo === "seccion") {
+      const row = ws.addRow([fila.label]);
+      row.font = { bold: true };
+      row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFEDE6" } };
+      return;
+    }
+    const label = fila.indent ? `  ${fila.label}` : fila.label;
+    const row = ws.addRow([label, ...(fila.valores ?? [])]);
+    if (fila.resaltado) row.font = { bold: true };
+    (fila.valores ?? []).forEach((v, i) => aplicarFormatoCelda(row.getCell(i + 2), fila.tipo === "pct" ? "pct" : "moneda", v));
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+  descargarBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), opts.nombreArchivo);
+}

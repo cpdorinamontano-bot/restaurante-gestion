@@ -4,9 +4,11 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCuentasBancarias } from "@/hooks/useCatalogos";
 import { fetchActivosFijos, depreciacionMensual, type ActivoFijo } from "@/lib/activosFijos";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils";
+import { FileSpreadsheet } from "lucide-react";
 
 function mesesEntre(desdeISO: string, hastaISO: string): number {
   const d1 = new Date(`${desdeISO}T00:00:00`);
@@ -130,6 +132,32 @@ export default function BalanceGeneral() {
   const totalPasivos = (cxpPendiente ?? 0) + otrosPasivosTotal;
   const capital = totalActivos - totalPasivos;
 
+  function exportar() {
+    exportTablaExcel({
+      titulo: "Bianco Storico — Balance general simplificado",
+      subtitulo: `Corte al ${corte}`,
+      columnas: [
+        { header: "Sección", width: 14 },
+        { header: "Concepto", width: 30 },
+        { header: "Monto", width: 18, tipo: "moneda" },
+      ],
+      filas: [
+        ["Activo", "Bancos", saldosBancarios ?? 0],
+        ["Activo", "Caja", saldoCaja ?? 0],
+        ["Activo", "Cuentas por cobrar", cxcPendiente ?? 0],
+        ["Activo", "Inventario", inventarioFinal ?? 0],
+        ["Activo", "Activos fijos (valor neto)", activosFijosNetos],
+        ...otrosActivos.map((c) => ["Activo", c.concepto, Number(c.saldo)]),
+        ["", "Total activos", totalActivos],
+        ["Pasivo", "Cuentas por pagar", cxpPendiente ?? 0],
+        ...otrosPasivos.map((c) => ["Pasivo", c.concepto, Number(c.saldo)]),
+        ["", "Total pasivos", totalPasivos],
+      ],
+      filaTotales: ["", "Capital (activos − pasivos)", capital],
+      nombreArchivo: `balance-general-${corte}.xlsx`,
+    });
+  }
+
   async function agregarConcepto() {
     if (!sucursalId || !nuevoConcepto.trim() || nuevoSaldo === "") return;
     setGuardando(true);
@@ -171,6 +199,9 @@ export default function BalanceGeneral() {
             className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
           />
         </label>
+        <Button variant="secondary" size="sm" onClick={exportar}>
+          <FileSpreadsheet className="h-4 w-4" /> Excel
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchReporteMensual } from "@/lib/reportes";
+import { exportTablaExcel } from "@/lib/reporteExport";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, FileSpreadsheet, Wand2 } from "lucide-react";
 
 type Categoria = "ventas" | "food_cost" | "labor_cost" | "gastos" | "utilidad";
 
@@ -16,6 +18,17 @@ const FILAS: { categoria: Categoria; label: string; unidad: "monto" | "pct" }[] 
   { categoria: "gastos", label: "Gastos fijos + variables", unidad: "monto" },
   { categoria: "utilidad", label: "Ganancia neta", unidad: "monto" },
 ];
+
+/** Mismo criterio que la comparación real-vs-objetivo de Presupuestos.tsx. */
+function calcularRealesDelMes(r: Awaited<ReturnType<typeof fetchReporteMensual>>) {
+  return {
+    ventas: r.ventasFuente === "sin_datos" ? null : r.ventasNeta,
+    food_cost: r.foodCostPct,
+    labor_cost: r.costoLaboralPct,
+    gastos: r.gastosFijosTotal + r.gastosVariablesTotal,
+    utilidad: r.gananciaNeta,
+  };
+}
 
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -33,6 +46,8 @@ export default function PresupuestoAnual() {
   const [celdas, setCeldas] = useState<Celdas>({});
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [crecimientoPct, setCrecimientoPct] = useState("0");
+  const [generando, setGenerando] = useState(false);
 
   const { data: presupuestos, isLoading } = useQuery({
     queryKey: ["presupuestos_anio", sucursalId, anio],
@@ -78,6 +93,70 @@ export default function PresupuestoAnual() {
         next[p] = { ...next[p], [categoria]: base };
       });
       return next;
+    });
+  }
+
+  /**
+   * Prellena los 12 meses del año en edición con el real del año anterior, mes a mes
+   * (enero del año anterior → enero de este año, y así sucesivamente), aplicando un
+   * % de crecimiento opcional a los montos (ventas, gastos, utilidad). Los porcentajes
+   * (food cost, costo laboral) se copian igual — un % no "crece", es una meta de eficiencia.
+   * No guarda nada todavía: solo llena las celdas para que se revisen/ajusten antes de
+   * "Guardar presupuesto".
+   */
+  async function generarDesdeReal() {
+    if (!sucursalId) return;
+    setGenerando(true);
+    setMensaje(null);
+    try {
+      const anioBase = anio - 1;
+      const periodosBase = periodosDelAnio(anioBase);
+      const reportes = await Promise.all(periodosBase.map((p) => fetchReporteMensual(sucursalId, p)));
+      const factor = 1 + (Number(crecimientoPct) || 0) / 100;
+
+      let huboDatos = false;
+      setCeldas((prev) => {
+        const next = { ...prev };
+        reportes.forEach((r, i) => {
+          const reales = calcularRealesDelMes(r);
+          const periodoNuevo = periodos[i];
+          FILAS.forEach(({ categoria, unidad }) => {
+            const real = reales[categoria];
+            if (real === null) return;
+            huboDatos = true;
+            const valor = unidad === "monto" ? real * factor : real;
+            next[periodoNuevo] = { ...next[periodoNuevo], [categoria]: valor.toFixed(2) };
+          });
+        });
+        return next;
+      });
+      setMensaje(
+        huboDatos
+          ? `Presupuesto ${anio} prellenado con el real de ${anioBase}${factor !== 1 ? ` (+${crecimientoPct}% en montos)` : ""}. Revísalo y ajusta antes de guardar.`
+          : `${anioBase} no tiene datos reales capturados todavía — no hay nada que prellenar.`
+      );
+    } finally {
+      setGenerando(false);
+    }
+  }
+
+  function exportarExcel() {
+    exportTablaExcel({
+      titulo: `Bianco Storico — Presupuesto anual ${anio}`,
+      columnas: [
+        { header: "Concepto", width: 28 },
+        ...MESES.map((m) => ({ header: m, width: 10, tipo: "numero" as const })),
+        { header: "Total", width: 14, tipo: "numero" as const },
+      ],
+      filas: FILAS.map((fila) => [
+        fila.label,
+        ...periodos.map((p) => {
+          const v = valorCelda(p, fila.categoria);
+          return v === "" ? null : Number(v);
+        }),
+        totalAnual(fila.categoria, fila.unidad),
+      ]),
+      nombreArchivo: `presupuesto-anual-${anio}.xlsx`,
     });
   }
 
@@ -129,6 +208,9 @@ export default function PresupuestoAnual() {
               className="mt-1 w-24 rounded-lg border border-ink-300 px-3 py-1.5 text-sm"
             />
           </label>
+          <Button variant="secondary" size="sm" onClick={exportarExcel}>
+            <FileSpreadsheet className="h-4 w-4" /> Excel
+          </Button>
           <Link
             to="/finanzas/presupuestos"
             className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 hover:bg-ink-50"
@@ -137,6 +219,35 @@ export default function PresupuestoAnual() {
           </Link>
         </div>
       </div>
+
+      <Card className="border-brand-200 bg-brand-50/50">
+        <CardContent className="flex flex-wrap items-end gap-3 py-4">
+          <div>
+            <p className="text-sm font-medium text-ink-800">Armar {anio} a partir de lo real de {anio - 1}</p>
+            <p className="mt-0.5 text-xs text-ink-500">
+              Prellena los 12 meses con las cifras reales del año anterior, mes a mes. Puedes ajustar un % de crecimiento para
+              ventas, gastos y utilidad — los porcentajes de food cost y costo laboral se copian igual. Nada se guarda hasta
+              que presiones "Guardar presupuesto".
+            </p>
+          </div>
+          <label className="flex flex-col text-xs font-medium text-ink-600">
+            Crecimiento en montos
+            <div className="mt-1 flex items-center gap-1">
+              <input
+                type="number"
+                step="0.1"
+                value={crecimientoPct}
+                onChange={(e) => setCrecimientoPct(e.target.value)}
+                className="w-20 rounded-lg border border-ink-300 px-2 py-1.5 text-right text-sm"
+              />
+              <span className="text-ink-500">%</span>
+            </div>
+          </label>
+          <Button size="sm" onClick={generarDesdeReal} disabled={generando}>
+            <Wand2 className="h-4 w-4" /> {generando ? "Generando…" : `Generar desde real de ${anio - 1}`}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="overflow-x-auto p-0">
