@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 import type { ReporteMensual } from "@/lib/reportes";
+import type { AnalisisGerencial } from "@/lib/analisisGerencial";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { LOGO_BIANCO_STORICO_BASE64 } from "@/assets/logoBase64";
 
@@ -24,7 +25,91 @@ function descargarBlob(blob: Blob, nombre: string) {
   URL.revokeObjectURL(url);
 }
 
-export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: string) {
+const COLOR_TIPO_OBSERVACION: Record<string, [number, number, number]> = {
+  Fortaleza: [23, 100, 60],
+  Debilidad: [153, 27, 27],
+  Recomendación: [30, 64, 150],
+};
+
+/**
+ * Sección "Resumen para socios y dirección" — el mismo análisis automático que se ve en
+ * pantalla (estado del periodo + fortalezas/debilidades/recomendaciones), en lenguaje llano,
+ * lista para imprimirse junto al resto del reporte. Devuelve la posición Y donde continuar.
+ */
+function agregarAnalisisPDF(doc: jsPDF, startY: number, analisis: AnalisisGerencial): number {
+  const anchoUtil = doc.internal.pageSize.getWidth() - 28;
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(23, 79, 61);
+  doc.text("Resumen para socios y dirección", 14, startY);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  const estadoLines: string[] = doc.splitTextToSize(analisis.estado, anchoUtil);
+  doc.text(estadoLines, 14, startY + 7);
+
+  const filas: [string, string][] = [
+    ...analisis.fortalezas.map((f) => ["Fortaleza", f] as [string, string]),
+    ...analisis.debilidades.map((d) => ["Debilidad", d] as [string, string]),
+    ...analisis.recomendaciones.map((rec) => ["Recomendación", rec] as [string, string]),
+  ];
+
+  autoTable(doc, {
+    startY: startY + 7 + estadoLines.length * 4.6 + 3,
+    head: [["", "Qué observamos y qué recomendamos"]],
+    body: filas,
+    theme: "grid",
+    headStyles: { fillColor: [23, 79, 61] },
+    bodyStyles: { fontSize: 9 },
+    columnStyles: { 0: { cellWidth: 30, fontStyle: "bold" } },
+    didParseCell: (data) => {
+      if (data.section === "body" && data.column.index === 0) {
+        const color = COLOR_TIPO_OBSERVACION[String(data.cell.raw)];
+        if (color) data.cell.styles.textColor = color;
+      }
+    },
+  });
+
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    "Lectura automática a partir de las cifras de este reporte, contra rangos saludables típicos de restaurante. No sustituye el criterio de quien decide.",
+    14,
+    (doc as any).lastAutoTable.finalY + 5
+  );
+  doc.setTextColor(0, 0, 0);
+
+  return (doc as any).lastAutoTable.finalY + 10;
+}
+
+function agregarAnalisisExcel(ws: ExcelJS.Worksheet, analisis: AnalisisGerencial) {
+  const seccion = ws.addRow(["Resumen para socios y dirección"]);
+  seccion.font = { bold: true, size: 12 };
+  const estadoRow = ws.addRow([analisis.estado]);
+  estadoRow.font = { italic: true };
+  ws.addRow([]);
+
+  const headerRow = ws.addRow(["Tipo", "Qué observamos y qué recomendamos"]);
+  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF174F3D" } };
+  });
+
+  const colorHex: Record<string, string> = { Fortaleza: "FF176432", Debilidad: "FF991B1B", Recomendación: "FF1E4096" };
+  const filas: [string, string][] = [
+    ...analisis.fortalezas.map((f) => ["Fortaleza", f] as [string, string]),
+    ...analisis.debilidades.map((d) => ["Debilidad", d] as [string, string]),
+    ...analisis.recomendaciones.map((rec) => ["Recomendación", rec] as [string, string]),
+  ];
+  filas.forEach(([tipo, texto]) => {
+    const row = ws.addRow([tipo, texto]);
+    const color = colorHex[tipo];
+    if (color) row.getCell(1).font = { bold: true, color: { argb: color } };
+  });
+  ws.addRow([]);
+}
+
+export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: string, analisis?: AnalisisGerencial | null) {
   const doc = new jsPDF();
   const mes = nombreMes(r.periodo);
 
@@ -36,8 +121,9 @@ export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: strin
 
   const ventasFuenteNota =
     r.ventasFuente === "ingresos_bancos_caja" ? " (= ingresos de banco y caja, sin módulo de Ventas)" : "";
+  const inicioDetalle = analisis ? agregarAnalisisPDF(doc, 30, analisis) : 30;
   autoTable(doc, {
-    startY: 30,
+    startY: inicioDetalle,
     head: [["Ventas", "Monto"]],
     body: [
       [`Ventas totales (brutas)${ventasFuenteNota}`, formatCurrency(r.ventasFuente === "sin_datos" ? null : r.ventasBruta)],
@@ -133,7 +219,7 @@ export function exportReporteMensualPDF(r: ReporteMensual, sucursalNombre: strin
   doc.save(`reporte-gerencial-${r.periodo.slice(0, 7)}.pdf`);
 }
 
-export async function exportReporteMensualExcel(r: ReporteMensual, sucursalNombre: string) {
+export async function exportReporteMensualExcel(r: ReporteMensual, sucursalNombre: string, analisis?: AnalisisGerencial | null) {
   const ventasFuenteNota =
     r.ventasFuente === "ingresos_bancos_caja" ? " (= ingresos de banco y caja, sin módulo de Ventas)" : "";
   const wb = new ExcelJS.Workbook();
@@ -144,6 +230,8 @@ export async function exportReporteMensualExcel(r: ReporteMensual, sucursalNombr
   ws.addRow([`Bianco Storico — Reporte Gerencial Mensual`]);
   ws.addRow([`${sucursalNombre} · ${nombreMes(r.periodo)}`]);
   ws.addRow([]);
+
+  if (analisis) agregarAnalisisExcel(ws, analisis);
 
   function seccion(titulo: string) {
     const row = ws.addRow([titulo]);
@@ -304,6 +392,7 @@ export async function exportMatrizExcel(opts: {
   columnas: string[]; // encabezados de periodo (ya incluye la última columna de total)
   filas: FilaMatriz[];
   nombreArchivo: string;
+  analisis?: AnalisisGerencial | null;
 }) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "Bianco Storico — Sistema de Gestión";
@@ -314,6 +403,10 @@ export async function exportMatrizExcel(opts: {
   tituloRow.font = { bold: true, size: 13 };
   if (opts.subtitulo) ws.addRow([opts.subtitulo]);
   ws.addRow([]);
+
+  if (opts.analisis) {
+    agregarAnalisisExcel(ws, opts.analisis);
+  }
 
   const headerRow = ws.addRow(["Concepto", ...opts.columnas]);
   headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
@@ -336,4 +429,63 @@ export async function exportMatrizExcel(opts: {
 
   const buffer = await wb.xlsx.writeBuffer();
   descargarBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), opts.nombreArchivo);
+}
+
+/**
+ * Versión en PDF de exportMatrizExcel — para "Mes a mes y acumulado" y "Estado de
+ * Resultados". En horizontal porque puede traer hasta 12 columnas de mes + total.
+ * Incluye el mismo "Resumen para socios y dirección" que el Reporte Gerencial Mensual,
+ * para imprimirse junto con él.
+ */
+export function exportMatrizPDF(opts: {
+  sucursalNombre: string;
+  tituloReporte: string;
+  subtitulo: string;
+  columnas: string[];
+  filas: FilaMatriz[];
+  nombreArchivo: string;
+  analisis?: AnalisisGerencial | null;
+}) {
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.addImage(LOGO_BIANCO_STORICO_BASE64, "PNG", 14, 9, 50, 8.28);
+  doc.setFontSize(11);
+  doc.setTextColor(90, 90, 90);
+  doc.text(`${opts.tituloReporte} · ${opts.sucursalNombre} · ${opts.subtitulo}`, 14, 24);
+  doc.setTextColor(0, 0, 0);
+
+  const inicioTabla = opts.analisis ? agregarAnalisisPDF(doc, 30, opts.analisis) : 30;
+
+  const body = opts.filas.map((fila) => {
+    if (fila.tipo === "seccion") {
+      return [
+        {
+          content: fila.label,
+          colSpan: opts.columnas.length + 1,
+          styles: { fontStyle: "bold" as const, fillColor: [239, 237, 230] as [number, number, number] },
+        },
+      ];
+    }
+    const label = fila.indent ? `  ${fila.label}` : fila.label;
+    const valores = (fila.valores ?? []).map((v) => (v === null ? "PENDIENTE" : fila.tipo === "pct" ? formatPercent(v) : formatCurrency(v)));
+    return [label, ...valores];
+  });
+
+  autoTable(doc, {
+    startY: inicioTabla,
+    head: [["Concepto", ...opts.columnas]],
+    body,
+    theme: "grid",
+    headStyles: { fillColor: [23, 79, 61] },
+    styles: { fontSize: 8 },
+  });
+
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    "PENDIENTE indica que el dato aún no ha sido capturado en el sistema. Este reporte nunca estima ni completa cifras faltantes.",
+    14,
+    (doc as any).lastAutoTable.finalY + 6
+  );
+
+  doc.save(opts.nombreArchivo);
 }

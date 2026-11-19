@@ -2,12 +2,12 @@ import { Fragment, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchEstadoResultadosMes, sumarEstadoResultados, type EstadoResultadosMes } from "@/lib/reporteEstadoResultados";
-import { exportMatrizExcel } from "@/lib/reporteExport";
+import { exportMatrizExcel, exportMatrizPDF } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatCurrency, formatPercent } from "@/lib/utils";
-import { ChevronDown, ChevronRight, FileSpreadsheet } from "lucide-react";
+import { ChevronDown, ChevronRight, FileDown, FileSpreadsheet } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -134,10 +134,9 @@ export default function EstadoResultados() {
     return fila.get(mes);
   }
 
-  function exportar() {
-    if (!meses || !total) return;
-    exportMatrizExcel({
-      titulo: "Bianco Storico — Estado de Resultados",
+  function filasExport() {
+    if (!meses || !total) return null;
+    return {
       subtitulo: `${nombreMesCorto(meses[0].periodo)} a ${nombreMesCorto(meses[meses.length - 1].periodo)}`,
       columnas: [...meses.map((m) => nombreMesCorto(m.periodo)), "Total"],
       filas: FILAS.map((fila) =>
@@ -151,7 +150,23 @@ export default function EstadoResultados() {
               valores: [...meses.map((m) => valorExport(fila, m)), valorExport(fila, total)],
             }
       ),
-      nombreArchivo: `estado-de-resultados-${desde}_${hasta}.xlsx`,
+    };
+  }
+
+  function exportarExcel() {
+    const datos = filasExport();
+    if (!datos) return;
+    exportMatrizExcel({ titulo: "Bianco Storico — Estado de Resultados", ...datos, nombreArchivo: `estado-de-resultados-${desde}_${hasta}.xlsx` });
+  }
+
+  function exportarPDF() {
+    const datos = filasExport();
+    if (!datos) return;
+    exportMatrizPDF({
+      sucursalNombre: "Bianco Storico",
+      tituloReporte: "Estado de Resultados",
+      ...datos,
+      nombreArchivo: `estado-de-resultados-${desde}_${hasta}.pdf`,
     });
   }
 
@@ -175,9 +190,14 @@ export default function EstadoResultados() {
             <input type="month" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm" />
           </label>
           {meses && total && (
-            <Button variant="secondary" size="sm" onClick={exportar}>
-              <FileSpreadsheet className="h-4 w-4" /> Excel
-            </Button>
+            <>
+              <Button variant="secondary" size="sm" onClick={exportarPDF}>
+                <FileDown className="h-4 w-4" /> PDF
+              </Button>
+              <Button variant="secondary" size="sm" onClick={exportarExcel}>
+                <FileSpreadsheet className="h-4 w-4" /> Excel
+              </Button>
+            </>
           )}
         </div>
       </div>

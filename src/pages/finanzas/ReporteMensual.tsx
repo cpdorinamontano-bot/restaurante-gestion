@@ -132,10 +132,10 @@ export default function ReporteMensual() {
           </label>
           {actual && (
             <>
-              <Button variant="secondary" size="sm" onClick={() => exportReporteMensualPDF(actual, "Bianco Storico")}>
+              <Button variant="secondary" size="sm" onClick={() => exportReporteMensualPDF(actual, "Bianco Storico", analisis)}>
                 <FileDown className="h-4 w-4" /> PDF
               </Button>
-              <Button variant="secondary" size="sm" onClick={() => exportReporteMensualExcel(actual, "Bianco Storico")}>
+              <Button variant="secondary" size="sm" onClick={() => exportReporteMensualExcel(actual, "Bianco Storico", analisis)}>
                 <FileSpreadsheet className="h-4 w-4" /> Excel
               </Button>
             </>

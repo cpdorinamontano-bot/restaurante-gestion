@@ -10,11 +10,11 @@ import {
 } from "@/lib/reportes";
 import { calcularPuntoEquilibrio, generarAnalisisGerencial } from "@/lib/analisisGerencial";
 import { AnalisisGerencialCard } from "@/components/finanzas/AnalisisGerencialCard";
-import { exportMatrizExcel } from "@/lib/reporteExport";
+import { exportMatrizExcel, exportMatrizPDF } from "@/lib/reporteExport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils";
-import { ChevronDown, ChevronRight, FileSpreadsheet } from "lucide-react";
+import { ChevronDown, ChevronRight, FileDown, FileSpreadsheet } from "lucide-react";
 
 interface Fila {
   key: string;
@@ -124,10 +124,9 @@ export default function ReporteAcumulado() {
     return fila.tipo === "pct" ? formatPercent(valor) : formatCurrency(valor);
   }
 
-  function exportar() {
-    if (!reportes || !acumulado) return;
-    exportMatrizExcel({
-      titulo: "Bianco Storico — Mes a mes y acumulado",
+  function filasExport() {
+    if (!reportes || !acumulado) return null;
+    return {
       subtitulo: `${nombreMesCorto(reportes[0].periodo)} a ${nombreMesCorto(reportes[reportes.length - 1].periodo)}`,
       columnas: [...reportes.map((r) => nombreMesCorto(r.periodo)), "Acumulado"],
       filas: FILAS.map((fila) => ({
@@ -136,7 +135,33 @@ export default function ReporteAcumulado() {
         resaltado: fila.resaltado,
         valores: [...reportes.map((r) => fila.get(r)), fila.get(acumulado)],
       })),
+    };
+  }
+
+  function exportarExcel() {
+    const datos = filasExport();
+    if (!datos) return;
+    exportMatrizExcel({
+      titulo: "Bianco Storico — Mes a mes y acumulado",
+      subtitulo: datos.subtitulo,
+      columnas: datos.columnas,
+      filas: datos.filas,
+      analisis,
       nombreArchivo: `mes-a-mes-acumulado-${desde}_${hasta}.xlsx`,
+    });
+  }
+
+  function exportarPDF() {
+    const datos = filasExport();
+    if (!datos) return;
+    exportMatrizPDF({
+      sucursalNombre: "Bianco Storico",
+      tituloReporte: "Mes a mes y acumulado",
+      subtitulo: datos.subtitulo,
+      columnas: datos.columnas,
+      filas: datos.filas,
+      analisis,
+      nombreArchivo: `mes-a-mes-acumulado-${desde}_${hasta}.pdf`,
     });
   }
 
@@ -157,9 +182,14 @@ export default function ReporteAcumulado() {
             <input type="month" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm" />
           </label>
           {reportes && acumulado && (
-            <Button variant="secondary" size="sm" onClick={exportar}>
-              <FileSpreadsheet className="h-4 w-4" /> Excel
-            </Button>
+            <>
+              <Button variant="secondary" size="sm" onClick={exportarPDF}>
+                <FileDown className="h-4 w-4" /> PDF
+              </Button>
+              <Button variant="secondary" size="sm" onClick={exportarExcel}>
+                <FileSpreadsheet className="h-4 w-4" /> Excel
+              </Button>
+            </>
           )}
         </div>
       </div>
